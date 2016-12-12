@@ -1,0 +1,56 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#| hue cmdline controller
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp (ql:quickload '(cl-hue
+                              apply-argv) :silent t)
+  )
+
+(defpackage :ros.script.hju.3690567483
+  (:use :cl))
+(in-package :ros.script.hju.3690567483)
+
+(defvar *hue-lights* '() "All lights.")
+(defvar *verbose* nil "Do a verbose output.")
+
+(defun print-usage ()
+  (format t "~&USAGE: foo"))
+
+(defun print-help ()
+  (print-usage)
+  (format t "~&HELP: bar"))
+
+(defun run-command (command switches)
+  "TODO"
+  (declare (ignorable command switches)))
+
+(defun execute (args)
+  (let ((command (car (remove-if (lambda (p) (not (consp p))) args)))
+        (switches (remove-if (lambda (p) (consp p)) args)))
+    (format t "~S~%~S~%~S~%" args command switches) ;NOTE debug
+    (let ((show-usage (null args))
+          (show-help (or (getf switches :h) (getf switches :help)))
+          (run-verbose (or (getf switches :v) (getf switches :verbose))))
+
+      (when show-usage
+        (print-usage)
+        (return-from execute 1))
+
+      (when show-help
+        (print-help)
+        (return-from execute 0))
+
+      (when run-verbose
+        (setf *verbose* t))
+
+      (run-command command switches))))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (execute (apply-argv:parse-argv argv)))
+
+
+;;; vim: set ft=lisp lisp:
