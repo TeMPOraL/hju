@@ -13,6 +13,9 @@ exec ros -Q -- $0 "$@"
   (:use :cl))
 (in-package :ros.script.hju.3690567483)
 
+
+;;; State.
+
 (defvar *hue-lights* '() "All lights.")
 (defvar *verbose* nil "Do a verbose output.")
 
@@ -63,6 +66,9 @@ exec ros -Q -- $0 "$@"
 "))
 
 
+;;; Hue lights utils
+
+
 ;;; Actual commands
 (defun bridge-status ()                        ;TODO
   (format t "STATUS: TODO."))
@@ -70,7 +76,7 @@ exec ros -Q -- $0 "$@"
 (defun list-lights ()                          ;TODO
   (format t "Lights: TODO."))
 
-(defun light-on (light-no)                    ;TODO
+(defun light-on (light)                    ;TODO
   (when *verbose* (format t "Turning light ... on...")))
 
 (defun light-off (light)                ;TODO
@@ -110,7 +116,19 @@ exec ros -Q -- $0 "$@"
   )
 
 
+;;; Command selection utils.
+
+
 ;;; Entry point-related and command processing.
+
+(defun init-hue-access (switches)
+  ;; TODO also load from file
+  (let ((bridge (or (getf switches :b)
+                    (getf switches :bridge)))
+        (user (or (getf switches :u)
+                  (getf switches :user))))
+    (when (and bridge user)
+      (setf *bridge* (cl-hue:make-bridge bridge user)))))
 
 (defun run-command (command switches)
   "TODO"
@@ -135,11 +153,13 @@ exec ros -Q -- $0 "$@"
       (when run-verbose
         (setf *verbose* t))
 
-      (run-command command switches))))
+      (if (init-hue-access switches)
+          (run-command command switches)
+          (progn (format t "~%ERROR: Bridge or user not specified.~%")
+                 (return-from execute -1))))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
   (execute (apply-argv:parse-argv argv)))
-
 
 ;;; vim: set ft=lisp lisp:
