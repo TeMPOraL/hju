@@ -16,7 +16,7 @@ exec ros -Q -- $0 "$@"
 
 ;;; State.
 
-(defvar *hue-lights* '() "All lights.")
+(defvar *bridge* nil "Hue bridge.")
 (defvar *verbose* nil "Do a verbose output.")
 
 
@@ -74,42 +74,55 @@ exec ros -Q -- $0 "$@"
   (format t "STATUS: TODO."))
 
 (defun list-lights ()                          ;TODO
-  (format t "Lights: TODO."))
+  (let ((lights (cl-hue:get-lights *bridge*)))
+    (print lights)))
 
 (defun light-on (light)                    ;TODO
+  (declare (ignorable light))
   (when *verbose* (format t "Turning light ... on...")))
 
 (defun light-off (light)                ;TODO
+  (declare (ignorable light))
   (when *verbose* (format t "Turning light ... off...")))
 
 (defun light-toggle (light)             ;TODO
+  (declare (ignorable light))
   (when *verbose* (format t "Toggling light ......")))
 
 (defun light-reset (light)              ;TODO
+  (declare (ignorable light))
   (when *verbose* (format t "Resetting light .....")))
 
 (defun light-blink (light)              ;TODO
+  (declare (ignorable light))
   (when *verbose* (format t "Blinking light ......")))
 
 (defun light-set-rgb (light r g b)            ;TODO
+  (declare (ignorable light r g b))
   )
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
+  (declare (ignorable light hex-rgb))
   )
 
 (defun light-set-hsv (light hsv)              ;TODO
+  (declare (ignorable light hsv))
   )
 
 (defun light-set-bri (light bri)        ;TODO
+  (declare (ignorable light bri))
   )
 
 (defun light-set-ct (light ct)          ;TODO
+  (declare (ignorable light ct))
   )
 
 (defun light-set-ctk (light ctk)        ;TODO
+  (declare (ignorable light ctk))
   )
 
 (defun light-set-xy (light x y)         ;TODO
+  (declare (ignorable light x y))
   )
 
 (defun diag ()                          ;TODO
@@ -131,8 +144,27 @@ exec ros -Q -- $0 "$@"
       (setf *bridge* (cl-hue:make-bridge bridge user)))))
 
 (defun run-command (command switches)
-  "TODO"
-  (declare (ignorable command switches)))
+  (declare (ignore switches))
+  (let ((verb (first command))
+        (args (rest command)))
+    (declare (ignore args))
+    (cond
+      ((string-equal verb "status")
+       (bridge-status))
+      ((string-equal verb "list")
+       (list-lights))
+      ((string-equal verb "on")
+       (light-on nil))                  ;FIXME
+      ((string-equal verb "off")
+       (light-off nil))                 ;FIXME
+      ((string-equal verb "toggle")
+       (light-toggle nil))              ;FIXME
+      ((string-equal verb "reset")
+       (light-reset nil))               ;FIXME
+      ((string-equal verb "set")
+       (format t "FIXME TODO"))         ;FIXME TODO
+      ((string-equal verb "diag")
+       (diag)))))
 
 (defun execute (args)
   (let ((command (car (remove-if (lambda (p) (not (consp p))) args)))
