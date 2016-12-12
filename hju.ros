@@ -16,12 +16,101 @@ exec ros -Q -- $0 "$@"
 (defvar *hue-lights* '() "All lights.")
 (defvar *verbose* nil "Do a verbose output.")
 
+
+;;; Help commands.
+
 (defun print-usage ()
-  (format t "~&USAGE: foo"))
+  (format t "~&hju - a simple command line controller for Hue lights
+~&Version: 0.1
+~&
+~&Usage:
+~&~8Thju [options...] <command> [args]"))
 
 (defun print-help ()
   (print-usage)
-  (format t "~&HELP: bar"))
+  (format t "~%
+~&Options:
+~&~8T-h, --help~25,8@TDisplay this text.
+~&~8T-v, --verbose~20,8@TMake output verbose.
+~&~8T-b BRIDGE, --bridge=BRIDGE~10,8@TUse different bridge URL than the default.
+~&~8T-u USER, --user=USER~15,8@TUse different user ID than the default.
+~&~8T-t TRANSITION, --transition=TRANSITION~10,8@TUse specified transition time.
+~&
+~&~4TTRANSITION is given in seconds, can be fractional. Default value: 0.4.
+~&
+~&Defaults are taken from the config file .hju in your home directory.
+~&The format of that file is:
+~&~4T(:bridge \"bridge URL\" :user \"USER ID\")
+~&
+~&Commands:
+~&~8Tstatus~20,8@TDisplay status of Hue bridge.
+~&~8Tlist~25,8@TList available lights.
+~&~8Ton LIGHT~20,8@TTurn on LIGHT.
+~&~8Toff LIGHT~20,8@TTurn off LIGHT.
+~&~8Ttoggle LIGHT~15,8@TToggle LIGHT.
+~&~8Treset LIGHT~15,8@TReset LIGHT to the values I (the author) like.
+~&~8Tblink LIGHT~15,8@TBlink LIGHT.
+~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0...255]).
+~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
+~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V) (each component in [0...255]).
+~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [0...255].
+~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
+~&~8Tset LIGHT ctk CTK~10,8@TSet color temperature of LIGHT to CTK in Kelvins.
+~&~8Tset LIGHT xy X Y~10,8@TSet color of LIGHT to coordinates (X, Y) in CIE color space.
+~&~8Tdiag~25,8@TLike status and list, but dumps a lot more of data.
+~&
+~&~4TLIGHT can be given as a number or as a prefix of its name.
+"))
+
+
+;;; Actual commands
+(defun bridge-status ()                        ;TODO
+  (format t "STATUS: TODO."))
+
+(defun list-lights ()                          ;TODO
+  (format t "Lights: TODO."))
+
+(defun light-on (light-no)                    ;TODO
+  (when *verbose* (format t "Turning light ... on...")))
+
+(defun light-off (light)                ;TODO
+  (when *verbose* (format t "Turning light ... off...")))
+
+(defun light-toggle (light)             ;TODO
+  (when *verbose* (format t "Toggling light ......")))
+
+(defun light-reset (light)              ;TODO
+  (when *verbose* (format t "Resetting light .....")))
+
+(defun light-blink (light)              ;TODO
+  (when *verbose* (format t "Blinking light ......")))
+
+(defun light-set-rgb (light r g b)            ;TODO
+  )
+
+(defun light-set-rgb-hex (light hex-rgb)      ;TODO
+  )
+
+(defun light-set-hsv (light hsv)              ;TODO
+  )
+
+(defun light-set-bri (light bri)        ;TODO
+  )
+
+(defun light-set-ct (light ct)          ;TODO
+  )
+
+(defun light-set-ctk (light ctk)        ;TODO
+  )
+
+(defun light-set-xy (light x y)         ;TODO
+  )
+
+(defun diag ()                          ;TODO
+  )
+
+
+;;; Entry point-related and command processing.
 
 (defun run-command (command switches)
   "TODO"
