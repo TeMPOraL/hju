@@ -1,0 +1,7 @@
+#+title: HJU - A simple command line Hue lights controller in Common Lisp.
+#+startup: hidestars
+
+Requires Roswell.
+
+Build with `ros build hju.ros`.
+
