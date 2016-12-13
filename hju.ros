@@ -21,6 +21,7 @@ exec ros -Q -- $0 "$@"
 (defvar *verbose* nil "Do a verbose output.")
 (defvar *errno* 0 "Error return code to OS.")
 (defvar *error-string* nil "Error string to show.")
+(defvar *transition-time* 4 "Transition time (in 1/10ths of a second).")
 
 
 ;;; Help commands.
@@ -75,6 +76,23 @@ exec ros -Q -- $0 "$@"
 
 ;;; Hue x Commands utils
 
+(defun get-light-by-param-id (param-id)
+  (let* ((numeric-id (parse-integer param-id :junk-allowed t))
+         (light (if numeric-id
+                    (find param-id *all-lights* :test #'string-equal :key #'cl-hue::light-number)
+                    (find param-id *all-lights*
+                          :test (lambda (key value)
+                                  (let ((result (search key value :test #'char-equal)))
+                                    (and (numberp result)
+                                         (= 0 result))))
+                          :key #'cl-hue::light-name))))
+    (unless light
+      (error "light ~A not found" param-id))
+    light))
+
+(defun light-short-description (light)
+  (format nil "~A (~A)" (cl-hue::light-name light) (cl-hue::light-number light)))
+
 (defun describe-light (light)
   (format t "~&[~A] ~A: ~A"
           (if (cl-hue::light-on-p light) "ON" "  ")
@@ -109,31 +127,50 @@ exec ros -Q -- $0 "$@"
 (defun bridge-status ()                        ;TODO
   (format t "STATUS: TODO."))
 
-(defun list-lights ()                          ;TODO
+(defun list-lights ()
   (mapc (if *verbose*
             'describe-light-verbose
             'describe-light)
         *all-lights*))
 
-(defun light-on (light)                    ;TODO
-  (declare (ignorable light))
-  (when *verbose* (format t "Turning light ... on...")))
+(defun light-on (light)
+  (when *verbose*
+    (format t "~&Turning on ~A over ~A milliseconds..." (light-short-description light) (* 100 *transition-time*)))
+  (cl-hue:set-light-state-by-number *bridge*
+                                    (cl-hue::light-number light)
+                                    :on t
+                                    :transitiontime *transition-time*))
 
-(defun light-off (light)                ;TODO
+(defun light-off (light)
+  ;; FIXME transition time is not used because it somehow breaks light settings...
   (declare (ignorable light))
-  (when *verbose* (format t "Turning light ... off...")))
+  (when *verbose*
+    (format t "~&Turning off ~A..." (light-short-description light)))
+  (cl-hue:set-light-state-by-number *bridge*
+                                    (cl-hue::light-number light)
+                                    :on nil))
 
-(defun light-toggle (light)             ;TODO
-  (declare (ignorable light))
-  (when *verbose* (format t "Toggling light ......")))
+(defun light-toggle (light)
+  (if (cl-hue::light-on-p light)
+      (light-off light)
+      (light-on light)))
 
-(defun light-reset (light)              ;TODO
-  (declare (ignorable light))
-  (when *verbose* (format t "Resetting light .....")))
+(defun light-reset (light)
+  (when *verbose*
+    (format t "Resetting light ~A..." (light-short-description light)))
+  (cl-hue::set-light-state-by-number *bridge* (cl-hue::light-number light)
+                                     :on t
+                                     :brightness 254
+                                     :ct 233
+                                     :transitiontime 2))
 
-(defun light-blink (light)              ;TODO
+(defun light-blink (light)
   (declare (ignorable light))
-  (when *verbose* (format t "Blinking light ......")))
+  (when *verbose*
+    (format t "Blinking light ~A..." (light-short-description light)))
+  (cl-hue:set-light-state-by-number *bridge*
+                                    (cl-hue::light-number light)
+                                    :alert "select"))
 
 (defun light-set-rgb (light r g b)            ;TODO
   (declare (ignorable light r g b))
@@ -200,26 +237,33 @@ exec ros -Q -- $0 "$@"
           t)
         (errout 1 "Bridge not set."))))
 
+(defun run-set-command (light subverb args)
+  ;; TODO
+  )
+
 (defun run-command (command switches)
   (declare (ignore switches))
   (let ((verb (first command))
         (args (rest command)))
-    (declare (ignore args))
     (cond
       ((string-equal verb "status")
        (bridge-status))
       ((string-equal verb "list")
        (list-lights))
       ((string-equal verb "on")
-       (light-on nil))                  ;FIXME
+       (light-on (get-light-by-param-id (first args))))
       ((string-equal verb "off")
-       (light-off nil))                 ;FIXME
+       (light-off (get-light-by-param-id (first args))))
       ((string-equal verb "toggle")
-       (light-toggle nil))              ;FIXME
+       (light-toggle (get-light-by-param-id (first args))))
       ((string-equal verb "reset")
-       (light-reset nil))               ;FIXME
+       (light-reset (get-light-by-param-id (first args))))
+      ((string-equal verb "blink")
+       (light-blink (get-light-by-param-id (first args))))
       ((string-equal verb "set")
-       (format t "FIXME TODO"))         ;FIXME TODO
+       (run-set-command (get-light-by-param-id (first args))
+                        (second args)
+                        (cddr args)))
 )))
 
 (defun execute (args)
