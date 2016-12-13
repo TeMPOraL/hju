@@ -26,6 +26,31 @@ exec ros -Q -- $0 "$@"
 (defvar *transition-time* 4 "Transition time (in 1/10ths of a second).")
 
 
+;;; Exit value constants (aka. SYSEXITs)
+(defparameter +exit-ok+ 0)
+(defparameter +exit-whatever+ 1)
+(defparameter +exit-usage-error+ 64)
+(defparameter +exit-data-format-error+ 65)
+(defparameter +exit-configuration-error+ 78)
+
+
+;;; Error handling.
+
+(defun errout (exit-code error-message)
+  "Sets the error string to be displayed at the end of application to `ERROR-MESSAGE', and sets the exit value of the program to `EXIT-CODE'."
+  (setf *errno* exit-code)
+  (error error-message))
+
+(defun trap-errors-handler (error)
+  (format *error-output* "Error: ~A." error)
+  (throw 'trap-errors (if (zerop *errno*) +exit-whatever+ *errno*)))
+
+(defmacro trap-errors (&rest forms)
+  `(catch 'trap-errors
+     (handler-bind ((error #'trap-errors-handler))
+       ,@forms)))
+
+
 ;;; Help commands.
 
 (defun print-usage ()
@@ -92,7 +117,7 @@ exec ros -Q -- $0 "$@"
                                   (starts-with value key :test #'char-equal))
                           :key #'cl-hue::light-name))))
     (unless light
-      (error "light ~A not found" param-id))
+      (errout +exit-usage-error+ (format nil "light ~A not found" param-id)))
     light))
 
 (defun light-short-description (light)
@@ -212,22 +237,6 @@ exec ros -Q -- $0 "$@"
 
 ;;; Command selection utils.
 
-
-;;; Error handling.
-
-(defun errout (exit-code error-message)
-  "Sets the error string to be displayed at the end of application to `ERROR-MESSAGE', and sets the exit value of the program to `EXIT-CODE'."
-  (setf *errno* exit-code)
-  (error error-message))
-
-(defun trap-errors-handler (error)
-  (format *error-output* "Error: ~A." error)
-  (throw 'trap-errors (if (zerop *errno*) -1 *errno*)))
-
-(defmacro trap-errors (&rest forms)
-  `(catch 'trap-errors
-     (handler-bind ((error #'trap-errors-handler))
-       ,@forms)))
 
 
 ;;; Entry point-related and command processing.
@@ -239,7 +248,7 @@ exec ros -Q -- $0 "$@"
         (user (or (getf switches :u)
                   (getf switches :user))))
     (unless (and bridge user)
-      (errout 1 "bridge not set"))
+      (errout +exit-configuration-error+ "bridge not set"))
     (setf *bridge* (cl-hue:make-bridge bridge user))
     (fetch-all-lights)))
 
@@ -314,7 +323,8 @@ exec ros -Q -- $0 "$@"
 
        ;; Init Hue connection and run actual command.
        (init-hue-access switches)
-       (run-command command switches)))))
+       (run-command command switches)))
+   +exit-ok+))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
