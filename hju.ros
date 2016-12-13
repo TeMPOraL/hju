@@ -15,6 +15,7 @@ exec ros -Q -- $0 "$@"
 
 ;;; TODO LIST
 ;;; - add "ALL" as a light type (or maybe ability to enumerate lights)
+;;; - implement reading bridge URI and user ID from configuration file
 
 
 ;;; State.
@@ -159,8 +160,8 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Actual commands
-(defun bridge-status ()                        ;TODO
-  (format t "STATUS: TODO."))
+(defun bridge-status ()                 ;TODO
+  (errout +exit-whatever+ "not yet implemented"))
 
 (defun list-lights ()
   (mapc (if *verbose*
@@ -209,15 +210,17 @@ exec ros -Q -- $0 "$@"
 
 (defun light-set-rgb (light r g b)            ;TODO
   (declare (ignorable light r g b))
-  (format t "~&Setting ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b))
+  (format t "~&Setting ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b)
+  (errout +exit-whatever+ "not yet implemented"))
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
   (declare (ignorable light hex-rgb))
   (format t "~&Setting ~A to ~S." (light-short-description light) hex-rgb)
-  )
+  (errout +exit-whatever+ "not yet implemented"))
 
 (defun light-set-hsv (light h s v)              ;TODO
-  (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v))
+  (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v)
+  (errout +exit-whatever+ "not yet implemented"))
 
 (defun light-set-bri (light bri)
   (let ((parsed-bri (parse-integer bri :junk-allowed t)))
@@ -267,7 +270,7 @@ exec ros -Q -- $0 "$@"
 (defun light-set-xy (light x y)         ;TODO
   (declare (ignorable light x y))
   (format t "~&Setting light ~A XY to (~S, ~S)." (light-short-description light) x y)
-  )
+  (errout +exit-whatever+ "not yet implemented"))
 
 
 ;;; Command selection utils.
@@ -332,7 +335,6 @@ exec ros -Q -- $0 "$@"
   (trap-errors
    (let ((command (car (remove-if (lambda (p) (not (consp p))) args)))
          (switches (remove-if (lambda (p) (consp p)) args)))
-     (format t "~S~%~S~%~S~%" args command switches) ;NOTE debug
      (let ((show-usage (null args))
            (show-help (or (getf switches :h) (getf switches :help)))
            (run-verbose (or (getf switches :v) (getf switches :verbose)))
