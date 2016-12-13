@@ -86,8 +86,8 @@ exec ros -Q -- $0 "$@"
 ~&~8Tblink LIGHT~15,8@TBlink LIGHT.
 ~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0...255]).
 ~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
-~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V) (each component in [0...255]).
-~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [0...255].
+~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V).
+~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [1...254].
 ~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
 ~&~8Tset LIGHT ctk CTK~10,8@TSet color temperature of LIGHT to CTK in Kelvins.
 ~&~8Tset LIGHT xy X Y~10,8@TSet color of LIGHT to coordinates (X, Y) in CIE color space.
@@ -219,17 +219,28 @@ exec ros -Q -- $0 "$@"
 (defun light-set-hsv (light h s v)              ;TODO
   (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v))
 
-(defun light-set-bri (light bri)        ;TODO
-  (declare (ignorable light bri))
-  (format t "~&Setting ~A brightness to ~S." (light-short-description light) bri)
-  )
+(defun light-set-bri (light bri)
+  (let ((parsed-bri (parse-integer bri :junk-allowed t)))
+    (unless (and (numberp parsed-bri)
+                 (> parsed-bri 0)
+                 (< parsed-bri 255))
+      (errout +exit-data-format-error+ "invalid brightness value"))
+    (when *verbose*
+      (format t "~&Setting brightness of ~A to ~A over ~A milliseconds..."
+              (light-short-description light)
+              parsed-bri
+              (* 100 *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :brightness parsed-bri
+                                      :transitiontime *transition-time*)))
 
 (defun light-set-ct (light ct)
   (let ((parsed-ct (parse-integer ct :junk-allowed t)))
     (unless (numberp parsed-ct)
       (errout +exit-data-format-error+ "invalid ct value"))
     (when *verbose*
-      (format t "Setting color temperature of ~A to ~A mireds over ~A milliseconds..."
+      (format t "~&Setting color temperature of ~A to ~A mireds over ~A milliseconds..."
               (light-short-description light)
               parsed-ct
               (* 100 *transition-time*)))
@@ -243,7 +254,7 @@ exec ros -Q -- $0 "$@"
     (unless (numberp parsed-ctk)
       (errout +exit-data-format-error+ "invalid ctk value"))
     (when *verbose*
-      (format t "Setting color temperature of ~A to ~A Kelvins (~A mireds) over ~A milliseconds..."
+      (format t "~&Setting color temperature of ~A to ~A Kelvins (~A mireds) over ~A milliseconds..."
               (light-short-description light)
               parsed-ctk
               (kelvins->mireds parsed-ctk)
