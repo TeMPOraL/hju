@@ -13,6 +13,9 @@ exec ros -Q -- $0 "$@"
   (:use :cl))
 (in-package :ros.script.hju.3690567483)
 
+;;; TODO LIST
+;;; - add "ALL" as a light type (or maybe ability to enumerate lights)
+
 
 ;;; State.
 
@@ -20,7 +23,6 @@ exec ros -Q -- $0 "$@"
 (defvar *all-lights* nil "All lights registered to the Hue bridge.")
 (defvar *verbose* nil "Do a verbose output.")
 (defvar *errno* 0 "Error return code to OS.")
-(defvar *error-string* nil "Error string to show.")
 (defvar *transition-time* 4 "Transition time (in 1/10ths of a second).")
 
 
@@ -37,11 +39,11 @@ exec ros -Q -- $0 "$@"
   (print-usage)
   (format t "~%
 ~&Options:
-~&~8T-h, --help~25,8@TDisplay this text.
-~&~8T-v, --verbose~20,8@TMake output verbose.
-~&~8T-b BRIDGE, --bridge=BRIDGE~10,8@TUse different bridge URL than the default.
-~&~8T-u USER, --user=USER~15,8@TUse different user ID than the default.
-~&~8T-t TRANSITION, --transition=TRANSITION~10,8@TUse specified transition time.
+~&~8T-h, --help~35,8@TDisplay this text.
+~&~8T-v, --verbose~30,8@TMake output verbose.
+~&~8T-b BRIDGE, --bridge=BRIDGE~15,8@TUse different bridge URL than the default.
+~&~8T-u USER, --user=USER~25,8@TUse different user ID than the default.
+~&~8T-t TRANSITION, --transition=TRANSITION~10,8@TUse specified transition time (in tenths of a second).
 ~&
 ~&~4TTRANSITION is given in seconds, can be fractional. Default value: 0.4.
 ~&
@@ -76,15 +78,18 @@ exec ros -Q -- $0 "$@"
 
 ;;; Hue x Commands utils
 
+(defun starts-with (string with-what &key (test #'char=))
+  (let ((result (search with-what string :test test)))
+    (and (numberp result)
+         (= 0 result))))
+
 (defun get-light-by-param-id (param-id)
   (let* ((numeric-id (parse-integer param-id :junk-allowed t))
          (light (if numeric-id
                     (find param-id *all-lights* :test #'string-equal :key #'cl-hue::light-number)
                     (find param-id *all-lights*
                           :test (lambda (key value)
-                                  (let ((result (search key value :test #'char-equal)))
-                                    (and (numberp result)
-                                         (= 0 result))))
+                                  (starts-with value key :test #'char-equal))
                           :key #'cl-hue::light-name))))
     (unless light
       (error "light ~A not found" param-id))
@@ -174,30 +179,34 @@ exec ros -Q -- $0 "$@"
 
 (defun light-set-rgb (light r g b)            ;TODO
   (declare (ignorable light r g b))
-  )
+  (format t "~&Setting light ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b))
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
   (declare (ignorable light hex-rgb))
+  (format t "~&Setting light ~A to ~S." (light-short-description light) hex-rgb)
   )
 
-(defun light-set-hsv (light hsv)              ;TODO
-  (declare (ignorable light hsv))
-  )
+(defun light-set-hsv (light h s v)              ;TODO
+  (format t "~&Setting light ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v))
 
 (defun light-set-bri (light bri)        ;TODO
   (declare (ignorable light bri))
+  (format t "~&Setting light ~A brightness to ~S." (light-short-description light) bri)
   )
 
 (defun light-set-ct (light ct)          ;TODO
   (declare (ignorable light ct))
+  (format t "~&Setting light ~A ct to ~S." (light-short-description light) ct)
   )
 
 (defun light-set-ctk (light ctk)        ;TODO
   (declare (ignorable light ctk))
+  (format t "~&Setting light ~A ctk to ~S." (light-short-description light) ctk)
   )
 
 (defun light-set-xy (light x y)         ;TODO
   (declare (ignorable light x y))
+  (format t "~&Setting light ~A XY to (~S, ~S)." (light-short-description light) x y)
   )
 
 
@@ -209,12 +218,11 @@ exec ros -Q -- $0 "$@"
 (defun errout (exit-code error-message)
   "Sets the error string to be displayed at the end of application to `ERROR-MESSAGE', and sets the exit value of the program to `EXIT-CODE'."
   (setf *errno* exit-code)
-  (setf *error-string* error-message)
-  nil)
+  (error error-message))
 
 (defun trap-errors-handler (error)
-  (format *error-output* "Fatal error: ~A." error)
-  (throw 'trap-errors -1))
+  (format *error-output* "Error: ~A." error)
+  (throw 'trap-errors (if (zerop *errno*) -1 *errno*)))
 
 (defmacro trap-errors (&rest forms)
   `(catch 'trap-errors
@@ -230,16 +238,27 @@ exec ros -Q -- $0 "$@"
                     (getf switches :bridge)))
         (user (or (getf switches :u)
                   (getf switches :user))))
-    (if (and bridge user)
-        (progn
-          (setf *bridge* (cl-hue:make-bridge bridge user))
-          (fetch-all-lights)
-          t)
-        (errout 1 "Bridge not set."))))
+    (unless (and bridge user)
+      (errout 1 "bridge not set"))
+    (setf *bridge* (cl-hue:make-bridge bridge user))
+    (fetch-all-lights)))
 
-(defun run-set-command (light subverb args)
-  ;; TODO
-  )
+(defun run-set-command (light set-what args)
+  (cond
+    ((string-equal set-what "rgb")
+     (if (starts-with (first args) "#")
+         (light-set-rgb-hex light (first args))
+         (light-set-rgb light (first args) (second args) (third args))))
+    ((string-equal set-what "hsv")
+     (light-set-hsv light (first args) (second args) (third args)))
+    ((string-equal set-what "bri")
+     (light-set-bri light (first args)))
+    ((string-equal set-what "ct")
+     (light-set-ct light (first args)))
+    ((string-equal set-what "ctk")
+     (light-set-ctk light (first args)))
+    ((string-equal set-what "xy")
+     (light-set-xy light (first args) (second args)))))
 
 (defun run-command (command switches)
   (declare (ignore switches))
@@ -263,8 +282,7 @@ exec ros -Q -- $0 "$@"
       ((string-equal verb "set")
        (run-set-command (get-light-by-param-id (first args))
                         (second args)
-                        (cddr args)))
-)))
+                        (cddr args))))))
 
 (defun execute (args)
   (trap-errors
@@ -273,7 +291,8 @@ exec ros -Q -- $0 "$@"
      (format t "~S~%~S~%~S~%" args command switches) ;NOTE debug
      (let ((show-usage (null args))
            (show-help (or (getf switches :h) (getf switches :help)))
-           (run-verbose (or (getf switches :v) (getf switches :verbose))))
+           (run-verbose (or (getf switches :v) (getf switches :verbose)))
+           (transition-time (or (getf switches :t) (getf switches :transition))))
 
        ;; Process switches.
        (when show-usage
@@ -287,14 +306,15 @@ exec ros -Q -- $0 "$@"
        (when run-verbose
          (setf *verbose* t))
 
-       ;; Init Hue connection and run actual command.
-       (when (init-hue-access switches)
-         (run-command command switches))
+       (when transition-time
+         (let ((parsed-time (parse-integer transition-time :junk-allowed t)))
+           (when (and (numberp parsed-time)
+                      (>= parsed-time 0))
+             (setf *transition-time* parsed-time))))
 
-       ;; Display errors in init / command, if any.
-       (when *error-string*
-         (format t "~&ERROR: ~A~%" *error-string*)
-         (return-from execute *errno*))))))
+       ;; Init Hue connection and run actual command.
+       (init-hue-access switches)
+       (run-command command switches)))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
