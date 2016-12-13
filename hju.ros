@@ -97,8 +97,13 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Hue lights utils
+
 (defun fetch-all-lights ()
   (setf *all-lights* (cl-hue:get-lights *bridge*)))
+
+(defun kelvins->mireds (ctk)
+  "Convert color temperature from Kelvins to mireds."
+  (floor (/ 1000000 ctk)))
 
 
 ;;; Hue x Commands utils
@@ -225,18 +230,28 @@ exec ros -Q -- $0 "$@"
       (errout +exit-data-format-error+ "invalid ct value"))
     (when *verbose*
       (format t "Setting color temperature of ~A to ~A mireds over ~A milliseconds..."
-             (light-short-description light)
-             parsed-ct
-             (* 100 *transition-time*)))
+              (light-short-description light)
+              parsed-ct
+              (* 100 *transition-time*)))
     (cl-hue:set-light-state-by-number *bridge*
                                       (cl-hue::light-number light)
                                       :ct parsed-ct
                                       :transitiontime *transition-time*)))
 
-(defun light-set-ctk (light ctk)        ;TODO
-  (declare (ignorable light ctk))
-  (format t "~&Setting light ~A ctk to ~S." (light-short-description light) ctk)
-  )
+(defun light-set-ctk (light ctk)
+  (let ((parsed-ctk (parse-integer ctk :junk-allowed t)))
+    (unless (numberp parsed-ctk)
+      (errout +exit-data-format-error+ "invalid ctk value"))
+    (when *verbose*
+      (format t "Setting color temperature of ~A to ~A Kelvins (~A mireds) over ~A milliseconds..."
+              (light-short-description light)
+              parsed-ctk
+              (kelvins->mireds parsed-ctk)
+              (* 100 *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :ct (kelvins->mireds parsed-ctk)
+                                      :transitiontime *transition-time*)))
 
 (defun light-set-xy (light x y)         ;TODO
   (declare (ignorable light x y))
