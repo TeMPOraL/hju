@@ -17,7 +17,10 @@ exec ros -Q -- $0 "$@"
 ;;; State.
 
 (defvar *bridge* nil "Hue bridge.")
+(defvar *all-lights* nil "All lights registered to the Hue bridge.")
 (defvar *verbose* nil "Do a verbose output.")
+(defvar *errno* 0 "Error return code to OS.")
+(defvar *error-string* nil "Error string to show.")
 
 
 ;;; Help commands.
@@ -67,6 +70,41 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Hue lights utils
+(defun fetch-all-lights ()
+  (setf *all-lights* (cl-hue:get-lights *bridge*)))
+
+
+
+;;; Hue x Commands utils
+
+(defun describe-light (light)
+  (format t "~&[~A] ~A: ~A"
+          (if (cl-hue::light-on-p light) "ON" "  ")
+          (cl-hue::light-number light)
+          (cl-hue::light-name light))
+  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds."
+          (cl-hue::light-colormode light)
+          (cl-hue::light-hue light)
+          (cl-hue::light-saturation light)
+          (cl-hue::light-brightness light)
+          (cl-hue::light-ct light)))
+
+(defun describe-light-verbose (light)
+  (format t "~&Light #~A: ~A" (cl-hue::light-number light) (cl-hue::light-name light))
+  (format t "~&~4TState: ~A" (if (cl-hue::light-on-p light) "ON" "OFF"))
+  (format t "~&~4TType: ~A" (cl-hue::light-type light))
+  (format t "~&~4TModel ID: ~A" (cl-hue::light-modelid light))
+  (format t "~&~4TUID: ~A" (cl-hue::light-uniqueid light))
+  (format t "~&~4TSoftware version: ~A" (cl-hue::light-swversion light))
+  (format t "~&~4TPoint symbol: ~A" (cl-hue::light-pointsymbol light))
+  (format t "~&~4TReachable: ~A" (if (cl-hue::light-reachable-p light) "YES" "NO"))
+  (format t "~&~4TColor mode: ~A" (cl-hue::light-colormode light))
+  (format t "~&~8TBrightness: ~A" (cl-hue::light-brightness light))
+  (format t "~&~8THue: ~A" (cl-hue::light-hue light))
+  (format t "~&~8TSaturation: ~A" (cl-hue::light-saturation light))
+  (format t "~&~8TXY: ~A" (cl-hue::light-xy light))
+  (format t "~&~8TCT (Mired): ~A" (cl-hue::light-ct light))
+  (format t "~%~%"))
 
 
 ;;; Actual commands
@@ -74,8 +112,10 @@ exec ros -Q -- $0 "$@"
   (format t "STATUS: TODO."))
 
 (defun list-lights ()                          ;TODO
-  (let ((lights (cl-hue:get-lights *bridge*)))
-    (print lights)))
+  (mapc (if *verbose*
+            'describe-light-verbose
+            'describe-light)
+        *all-lights*))
 
 (defun light-on (light)                    ;TODO
   (declare (ignorable light))
@@ -132,6 +172,24 @@ exec ros -Q -- $0 "$@"
 ;;; Command selection utils.
 
 
+;;; Error handling.
+
+(defun errout (exit-code error-message)
+  "Sets the error string to be displayed at the end of application to `ERROR-MESSAGE', and sets the exit value of the program to `EXIT-CODE'."
+  (setf *errno* exit-code)
+  (setf *error-string* error-message)
+  nil)
+
+(defun trap-errors-handler (error)
+  (format *error-output* "Fatal error: ~A." error)
+  (throw 'trap-errors -1))
+
+(defmacro trap-errors (&rest forms)
+  `(catch 'trap-errors
+     (handler-bind ((error #'trap-errors-handler))
+       ,@forms)))
+
+
 ;;; Entry point-related and command processing.
 
 (defun init-hue-access (switches)
@@ -140,8 +198,12 @@ exec ros -Q -- $0 "$@"
                     (getf switches :bridge)))
         (user (or (getf switches :u)
                   (getf switches :user))))
-    (when (and bridge user)
-      (setf *bridge* (cl-hue:make-bridge bridge user)))))
+    (if (and bridge user)
+        (progn
+          (setf *bridge* (cl-hue:make-bridge bridge user))
+          (fetch-all-lights)
+          t)
+        (errout 1 "Bridge not set."))))
 
 (defun run-command (command switches)
   (declare (ignore switches))
@@ -167,28 +229,34 @@ exec ros -Q -- $0 "$@"
        (diag)))))
 
 (defun execute (args)
-  (let ((command (car (remove-if (lambda (p) (not (consp p))) args)))
-        (switches (remove-if (lambda (p) (consp p)) args)))
-    (format t "~S~%~S~%~S~%" args command switches) ;NOTE debug
-    (let ((show-usage (null args))
-          (show-help (or (getf switches :h) (getf switches :help)))
-          (run-verbose (or (getf switches :v) (getf switches :verbose))))
+  (trap-errors
+   (let ((command (car (remove-if (lambda (p) (not (consp p))) args)))
+         (switches (remove-if (lambda (p) (consp p)) args)))
+     (format t "~S~%~S~%~S~%" args command switches) ;NOTE debug
+     (let ((show-usage (null args))
+           (show-help (or (getf switches :h) (getf switches :help)))
+           (run-verbose (or (getf switches :v) (getf switches :verbose))))
 
-      (when show-usage
-        (print-usage)
-        (return-from execute 1))
+       ;; Process switches.
+       (when show-usage
+         (print-usage)
+         (return-from execute 1))
 
-      (when show-help
-        (print-help)
-        (return-from execute 0))
+       (when show-help
+         (print-help)
+         (return-from execute 0))
 
-      (when run-verbose
-        (setf *verbose* t))
+       (when run-verbose
+         (setf *verbose* t))
 
-      (if (init-hue-access switches)
-          (run-command command switches)
-          (progn (format t "~%ERROR: Bridge or user not specified.~%")
-                 (return-from execute -1))))))
+       ;; Init Hue connection and run actual command.
+       (when (init-hue-access switches)
+         (run-command command switches))
+
+       ;; Display errors in init / command, if any.
+       (when *error-string*
+         (format t "~&ERROR: ~A~%" *error-string*)
+         (return-from execute *errno*))))))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
