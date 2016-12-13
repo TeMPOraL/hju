@@ -1,7 +1,65 @@
 #+title: HJU - A simple command line Hue lights controller in Common Lisp.
 #+startup: hidestars
 
-Requires Roswell.
+* Installation
 
-Build with `ros build hju.ros`.
+  Requirements:
+  - [[https://github.com/roswell/roswell][roswell]]
+  - [[https://www.quicklisp.org/beta/][quicklisp]]
+
+  You can run the script directly or, better, build an executable first with roswell.
+
+  #+BEGIN_SRC sh
+  ros build hju.ros
+  #+END_SRC
+
+* Usage
+
+#+BEGIN_SRC sh
+$ ./hju --help
+hju - a simple command line controller for Hue lights
+Version: 0.1
+
+Usage:
+        hju [options...] <command> [args]
+
+Options:
+        -h, --help                                      Display this text.
+        -v, --verbose                                   Make output verbose.
+        -b BRIDGE, --bridge=BRIDGE                      Use different bridge URL than the default.
+        -u USER, --user=USER                            Use different user ID than the default.
+        -t TRANSITION, --transition=TRANSITION          Use specified transition time (in tenths of a second).
+
+    TRANSITION is given in seconds, can be fractional. Default value: 0.4.
+
+Defaults are taken from the config file .hju in your home directory.
+The format of that file is:
+    (:bridge "bridge URL" :user "USER ID")
+
+Commands:
+        status                          Display status of Hue bridge and all lights.
+        list                            Just list available lights and their status.
+        on LIGHT                        Turn on LIGHT.
+        off LIGHT                       Turn off LIGHT.
+        toggle LIGHT                    Toggle LIGHT.
+        reset LIGHT                     Reset LIGHT to the values I (the author) like.
+        blink LIGHT                     Blink LIGHT.
+        set LIGHT rgb R G B             Set color of LIGHT to rgb(R, G, B) (each component in [0...255]).
+        set LIGHT rgb #RRGGBB           Set color of LIGHT to #RRGGBB (hex).
+        set LIGHT hsv H S V             Set color of LIGHT to hsv(H, S, V).
+        set LIGHT bri BRI               Set brightness of LIGHT to BRI [1...254].
+        set LIGHT ct CT                 Set color temperature of LIGHT to CT in Mired.
+        set LIGHT ctk CTK               Set color temperature of LIGHT to CTK in Kelvins.
+        set LIGHT xy X Y                Set color of LIGHT to coordinates (X, Y) in CIE color space.
+
+    LIGHT can be given as a number or as a prefix of its name.
+#+END_SRC
+
+
+* To be done
+  - status
+  - set LIGHT rgb
+  - set LIGHT hsv
+  - set LIGHT xy
+  - reading bridge URL and user ID from configuration
 
