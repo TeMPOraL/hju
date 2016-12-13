@@ -15,6 +15,10 @@
 
 * Usage
 
+  Ensure you have an user registered on Hue bridge for this application (in the future, this process
+  will be done from this tool, but now it has to be done manually). Refer to [[https://www.developers.meethue.com/documentation/getting-started][Hue API documentation]]
+  for this process.
+
 #+BEGIN_SRC sh
 $ ./hju --help
 hju - a simple command line controller for Hue lights
@@ -57,9 +61,15 @@ Commands:
 
 
 * To be done
-  - status
-  - set LIGHT rgb
-  - set LIGHT hsv
-  - set LIGHT xy
-  - reading bridge URL and user ID from configuration
 
+** Current focus
+   - status
+   - set LIGHT rgb
+   - set LIGHT hsv
+   - set LIGHT xy
+   - reading bridge URL and user ID from configuration
+
+** Future work
+   - changing the interface to allow affecting multiple lights with a single command
+   - adding ability to customize color names
+   - adding ability to pair the app with bridge
