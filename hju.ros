@@ -187,7 +187,7 @@ exec ros -Q -- $0 "$@"
 
 (defun light-reset (light)
   (when *verbose*
-    (format t "Resetting light ~A..." (light-short-description light)))
+    (format t "~&Resetting ~A..." (light-short-description light)))
   (cl-hue::set-light-state-by-number *bridge* (cl-hue::light-number light)
                                      :on t
                                      :brightness 254
@@ -197,32 +197,41 @@ exec ros -Q -- $0 "$@"
 (defun light-blink (light)
   (declare (ignorable light))
   (when *verbose*
-    (format t "Blinking light ~A..." (light-short-description light)))
+    (format t "~&Blinking ~A..." (light-short-description light)))
   (cl-hue:set-light-state-by-number *bridge*
                                     (cl-hue::light-number light)
                                     :alert "select"))
 
 (defun light-set-rgb (light r g b)            ;TODO
   (declare (ignorable light r g b))
-  (format t "~&Setting light ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b))
+  (format t "~&Setting ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b))
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
   (declare (ignorable light hex-rgb))
-  (format t "~&Setting light ~A to ~S." (light-short-description light) hex-rgb)
+  (format t "~&Setting ~A to ~S." (light-short-description light) hex-rgb)
   )
 
 (defun light-set-hsv (light h s v)              ;TODO
-  (format t "~&Setting light ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v))
+  (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v))
 
 (defun light-set-bri (light bri)        ;TODO
   (declare (ignorable light bri))
-  (format t "~&Setting light ~A brightness to ~S." (light-short-description light) bri)
+  (format t "~&Setting ~A brightness to ~S." (light-short-description light) bri)
   )
 
-(defun light-set-ct (light ct)          ;TODO
-  (declare (ignorable light ct))
-  (format t "~&Setting light ~A ct to ~S." (light-short-description light) ct)
-  )
+(defun light-set-ct (light ct)
+  (let ((parsed-ct (parse-integer ct :junk-allowed t)))
+    (unless (numberp parsed-ct)
+      (errout +exit-data-format-error+ "invalid ct value"))
+    (when *verbose*
+      (format t "Setting color temperature of ~A to ~A mireds over ~A milliseconds..."
+             (light-short-description light)
+             parsed-ct
+             (* 100 *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :ct parsed-ct
+                                      :transitiontime *transition-time*)))
 
 (defun light-set-ctk (light ctk)        ;TODO
   (declare (ignorable light ctk))
