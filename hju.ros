@@ -49,8 +49,8 @@ exec ros -Q -- $0 "$@"
 ~&~4T(:bridge \"bridge URL\" :user \"USER ID\")
 ~&
 ~&Commands:
-~&~8Tstatus~20,8@TDisplay status of Hue bridge.
-~&~8Tlist~25,8@TList available lights.
+~&~8Tstatus~20,8@TDisplay status of Hue bridge and all lights.
+~&~8Tlist~25,8@TJust list available lights and their status.
 ~&~8Ton LIGHT~20,8@TTurn on LIGHT.
 ~&~8Toff LIGHT~20,8@TTurn off LIGHT.
 ~&~8Ttoggle LIGHT~15,8@TToggle LIGHT.
@@ -63,7 +63,6 @@ exec ros -Q -- $0 "$@"
 ~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
 ~&~8Tset LIGHT ctk CTK~10,8@TSet color temperature of LIGHT to CTK in Kelvins.
 ~&~8Tset LIGHT xy X Y~10,8@TSet color of LIGHT to coordinates (X, Y) in CIE color space.
-~&~8Tdiag~25,8@TLike status and list, but dumps a lot more of data.
 ~&
 ~&~4TLIGHT can be given as a number or as a prefix of its name.
 "))
@@ -72,7 +71,6 @@ exec ros -Q -- $0 "$@"
 ;;; Hue lights utils
 (defun fetch-all-lights ()
   (setf *all-lights* (cl-hue:get-lights *bridge*)))
-
 
 
 ;;; Hue x Commands utils
@@ -165,9 +163,6 @@ exec ros -Q -- $0 "$@"
   (declare (ignorable light x y))
   )
 
-(defun diag ()                          ;TODO
-  )
-
 
 ;;; Command selection utils.
 
@@ -225,8 +220,7 @@ exec ros -Q -- $0 "$@"
        (light-reset nil))               ;FIXME
       ((string-equal verb "set")
        (format t "FIXME TODO"))         ;FIXME TODO
-      ((string-equal verb "diag")
-       (diag)))))
+)))
 
 (defun execute (args)
   (trap-errors
