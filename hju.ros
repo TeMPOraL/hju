@@ -6,7 +6,8 @@ exec ros -Q -- $0 "$@"
 (progn ;;init forms
   (ros:ensure-asdf)
   #+quicklisp (ql:quickload '(cl-hue
-                              apply-argv) :silent t)
+                              apply-argv
+                              parse-number) :silent t)
   )
 
 (defpackage :ros.script.hju.3690567483
@@ -148,7 +149,6 @@ exec ros -Q -- $0 "$@"
   (format t "~&~4TModel ID: ~A" (cl-hue::light-modelid light))
   (format t "~&~4TUID: ~A" (cl-hue::light-uniqueid light))
   (format t "~&~4TSoftware version: ~A" (cl-hue::light-swversion light))
-  (format t "~&~4TPoint symbol: ~A" (cl-hue::light-pointsymbol light))
   (format t "~&~4TReachable: ~A" (if (cl-hue::light-reachable-p light) "YES" "NO"))
   (format t "~&~4TColor mode: ~A" (cl-hue::light-colormode light))
   (format t "~&~8TBrightness: ~A" (cl-hue::light-brightness light))
@@ -179,7 +179,6 @@ exec ros -Q -- $0 "$@"
 
 (defun light-off (light)
   ;; FIXME transition time is not used because it somehow breaks light settings...
-  (declare (ignorable light))
   (when *verbose*
     (format t "~&Turning off ~A..." (light-short-description light)))
   (cl-hue:set-light-state-by-number *bridge*
@@ -201,7 +200,6 @@ exec ros -Q -- $0 "$@"
                                      :transitiontime 2))
 
 (defun light-blink (light)
-  (declare (ignorable light))
   (when *verbose*
     (format t "~&Blinking ~A..." (light-short-description light)))
   (cl-hue:set-light-state-by-number *bridge*
@@ -364,7 +362,6 @@ exec ros -Q -- $0 "$@"
    +exit-ok+))
 
 (defun main (&rest argv)
-  (declare (ignorable argv))
   (execute (apply-argv:parse-argv argv)))
 
 ;;; vim: set ft=lisp lisp:
