@@ -123,10 +123,58 @@ exec ros -Q -- $0 "$@"
   (floor (/ 1000000 ctk)))
 
 
-;;; Hue x Commands utils
+;;; Math utils
+(defun make-vec-2d (x y)
+  (list x y))
+
+(defun vec-x (v)
+  (car v))
+
+(defun vec-y (v)
+  (cadr v))
+
 (defun clamp (what a b)
   "Ensures `WHAT' is between `A' and `B' (inclusive)."
   (max a (min b what)))
+
+(defun cross-product (v1 v2)
+  "Cross product of two 2D vectors - `v1' and `v2'. Returns a scalar equal to the magnitude
+of the cross product in 3D space."
+  (- (* (vec-x v1) (vec-y v2))
+     (* (vec-y v1) (vec-x v2))))
+
+(defun dot-product (v1 v2)
+  "Dot product of two 2D vectors - `v1' and `v2'."
+  (+ (* (vec-x v1) (vec-x v2))
+     (* (vec-y v1) (vec-y v2))))
+
+(defun distance-2d-squared (v1 v2)
+  (let ((dx (- (vec-x v1)
+               (vec-x v2)))
+        (dy (- (vec-y v1)
+               (vec-y v2))))
+    (+ (* dx dx)
+       (* dy dy))))
+
+(defun point-closest-to-segment (point segment-start segment-end)
+  "Returns a point closest to `POINT' that is on a segment starting from `SEGMENT-START' and ending at `SEGMENT-END'.
+Order of segment start/end is irrelevant."
+  (let* ((start->point (make-vec-2d (- (vec-x point) (vec-x segment-start))
+                                    (- (vec-y point) (vec-y segment-start))))
+         (start->end (make-vec-2d (- (vec-x segment-end) (vec-x segment-start))
+                                  (- (vec-y segment-end) (vec-y segment-start))))
+         (start->end-dotsquared (dot-product start->end start->end))
+         (start->point-dot-start->end (dot-product start->end start->point))
+         (p (clamp (/ start->point-dot-start->end start->end-dotsquared)
+                   0.0
+                   1.0)))
+    (make-vec-2d (+ (vec-x segment-start)
+                    (* (vec-x start->end) p))
+                 (+ (vec-y segment-start)
+                    (* (vec-y start->end) p)))))
+
+
+;;; Hue x Commands utils
 
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
@@ -135,10 +183,31 @@ exec ros -Q -- $0 "$@"
   )
 
 (defun closest-point-on-triangle (point triangle-r triangle-g triangle-b)
-  "Takes a `POINT' (list x y) and 3 triangle points (also in the (list x y) format). Returns
-closest point as values."
-  ;; TODO
-  (values (car point) (cadr point)))
+  "Takes a `POINT' and a triangle made of three corners; returns closest point to `POINT' in the triangle."
+  (flet ((point-in-triangle ()
+           (let* ((rx (vec-x triangle-r))
+                  (ry (vec-y triangle-r))
+                  (v1 (list (- (vec-x triangle-g) rx)
+                            (- (vec-y triangle-g) ry)))
+                  (v2 (list (- (vec-x triangle-b) rx)
+                            (- (vec-y triangle-b) ry)))
+                  (q (list (- (vec-x point) rx)
+                           (- (vec-y point) ry)))
+                  (divisor (cross-product v1 v2))
+                  (s (/ (cross-product q v2) divisor))
+                  (u (/ (cross-product v1 q) divisor)))
+             (and (>= s 0.0)
+                  (>= u 0.0)
+                  (<= (+ s u)
+                      1.0))))
+         (compute-closest-point ()
+           
+           ))
+    
+    ;; TODO
+    (if (point-in-triangle)
+        point
+        (compute-closest-point))))
 
 (defun color-gamut->color-triangle (gamut)
   (cdr (assoc gamut +color-gamuts+)))
@@ -169,11 +238,10 @@ closest point as values."
         (multiple-value-bind (x y z) (D65-conversion corrected-r corrected-g corrected-b)
           (let* ((sum (+ x y z))
                  (brightness y)
-                 (point-x (if (zerop sum) 0.0 (/ x sum)))
-                 (point-y (if (zerop sum) 0.0 (/ y sum))))
-            (multiple-value-bind (final-x final-y) (closest-point-on-triangle (list point-x point-y)
-                                                                              triangle-r triangle-g triangle-b)
-              (values final-x final-y brightness))))))))
+                 (candidate-point (make-vec-2d (if (zerop sum) 0.0 (/ x sum))
+                                       (if (zerop sum) 0.0 (/ y sum))))
+                 (final-point (closest-point-on-triangle candidate-point triangle-r triangle-g triangle-b)))
+            (values (vec-x final-point) (vec-y final-point) brightness)))))))
 
 (defun starts-with (string with-what &key (test #'char=))
   (let ((result (search with-what string :test test)))
