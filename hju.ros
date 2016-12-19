@@ -101,7 +101,7 @@ exec ros -Q -- $0 "$@"
 ~&~8Ttoggle LIGHT~15,8@TToggle LIGHT.
 ~&~8Treset LIGHT~15,8@TReset LIGHT to the values I (the author) like.
 ~&~8Tblink LIGHT~15,8@TBlink LIGHT.
-~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0...255]).
+~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
 ~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
 ~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V).
 ~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [1...254].
@@ -124,6 +124,9 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Hue x Commands utils
+(defun clamp (what a b)
+  "Ensures `WHAT' is between `A' and `B' (inclusive)."
+  (max a (min b what)))
 
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
@@ -135,9 +138,22 @@ exec ros -Q -- $0 "$@"
   (cdr (assoc gamut +color-gamuts+)))
 
 (defun rgb->xy (r g b light-type)
-  (multiple-value-bind (triangle-r triangle-g triangle-b) (color-gamut->color-triangle (light-type->color-gamut light-type))
-      ;; TODO
-    ))
+  (flet ((gamma-correction (r g b)
+           ;; TODO
+           (values r g b))
+         (D65-conversion (r g b)
+           ;; TODO
+           (values r g b)))
+    (multiple-value-bind (triangle-r triangle-g triangle-b) (color-gamut->color-triangle (light-type->color-gamut light-type))
+      (multiple-value-bind (corrected-r corrected-g corrected-b) (gamma-correction r g b)
+        (multiple-value-bind (x y z) (D65-conversion corrected-r corrected-g corrected-b)
+          (let* ((sum (+ x y z))
+                 (brightness y)
+                 (point-x (if (zerop sum) 0.0 (/ x sum)))
+                 (point-y (if (zerop sum) 0.0 (/ y sum))))
+            (multiple-value-bind (final-x final-y) (closest-point-on-triangle (list point-x point-y)
+                                                                              triangle-r triangle-g triangle-b)
+              (values final-x final-y brightness))))))))
 
 (defun starts-with (string with-what &key (test #'char=))
   (let ((result (search with-what string :test test)))
@@ -164,7 +180,7 @@ exec ros -Q -- $0 "$@"
           (if (cl-hue::light-on-p light) "ON" "  ")
           (cl-hue::light-number light)
           (cl-hue::light-name light))
-  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds." ;FIXME if mode = xy, output XY instead; HSV goes only if mode=hs (also consider computed values instead)
+  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds." ;FIXME if mode = xy, output XY (and brightness)instead; HSV goes only if mode=hs (also consider computed values instead)
           (cl-hue::light-colormode light)
           (cl-hue::light-hue light)
           (cl-hue::light-saturation light)
