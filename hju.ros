@@ -187,12 +187,12 @@ Order of segment start/end is irrelevant."
   (flet ((point-in-triangle ()
            (let* ((rx (vec-x triangle-r))
                   (ry (vec-y triangle-r))
-                  (v1 (list (- (vec-x triangle-g) rx)
-                            (- (vec-y triangle-g) ry)))
-                  (v2 (list (- (vec-x triangle-b) rx)
-                            (- (vec-y triangle-b) ry)))
-                  (q (list (- (vec-x point) rx)
-                           (- (vec-y point) ry)))
+                  (v1 (make-vec-2d (- (vec-x triangle-g) rx)
+                                   (- (vec-y triangle-g) ry)))
+                  (v2 (make-vec-2d (- (vec-x triangle-b) rx)
+                                   (- (vec-y triangle-b) ry)))
+                  (q (make-vec-2d (- (vec-x point) rx)
+                                  (- (vec-y point) ry)))
                   (divisor (cross-product v1 v2))
                   (s (/ (cross-product q v2) divisor))
                   (u (/ (cross-product v1 q) divisor)))
@@ -201,7 +201,7 @@ Order of segment start/end is irrelevant."
                   (<= (+ s u)
                       1.0))))
          (compute-closest-point ()
-           
+           ;; TODO
            ))
     
     ;; TODO
