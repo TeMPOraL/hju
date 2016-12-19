@@ -37,17 +37,17 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Color gamuts
-(defparameter +color-gamuts+ '((:gamut-A . (0.704 0.296 ;R
-                                            0.2151 0.7106 ;G
-                                            0.138 0.080 ;B
+(defparameter +color-gamuts+ '((:gamut-A . ((0.704 0.296)   ;R
+                                            (0.2151 0.7106) ;G
+                                            (0.138 0.080)   ;B
                                             ))
-                               (:gamut-B . (0.675 0.322 ;R
-                                            0.409 0.518 ;G
-                                            0.167 0.040 ;B
+                               (:gamut-B . ((0.675 0.322)   ;R
+                                            (0.409 0.518)   ;G
+                                            (0.167 0.040)   ;B
                                             ))
-                               (:default . (1.000 0.000 ;R
-                                            0.000 1.000 ;G
-                                            0.000 0.000 ;B
+                               (:default . ((1.000 0.000)   ;R
+                                            (0.000 1.000)   ;G
+                                            (0.000 0.000)   ;B
                                             ))))
 
 
@@ -134,18 +134,38 @@ exec ros -Q -- $0 "$@"
   :gamut-B
   )
 
+(defun closest-point-on-triangle (point triangle-r triangle-g triangle-b)
+  "Takes a `POINT' (list x y) and 3 triangle points (also in the (list x y) format). Returns
+closest point as values."
+  ;; TODO
+  (values (car point) (cadr point)))
+
 (defun color-gamut->color-triangle (gamut)
   (cdr (assoc gamut +color-gamuts+)))
 
 (defun rgb->xy (r g b light-type)
-  (flet ((gamma-correction (r g b)
-           ;; TODO
-           (values r g b))
-         (D65-conversion (r g b)
-           ;; TODO
-           (values r g b)))
-    (multiple-value-bind (triangle-r triangle-g triangle-b) (color-gamut->color-triangle (light-type->color-gamut light-type))
-      (multiple-value-bind (corrected-r corrected-g corrected-b) (gamma-correction r g b)
+  (labels ((gamma-correct (component)
+             (if (> component 0.04045)
+                 (expt (/ (+ component 0.055)
+                          (+ 1.0 0.055))
+                       2.4)
+                 (/ component 12.92)))
+           (gamma-correction (r g b)
+             (mapcar #'gamma-correct (list r g b)))
+           (D65-conversion (r g b)
+             ;; taken from Hue documentation
+             (let ((x (+ (* r 0.664511)
+                         (* g 0.154324)
+                         (* b 0.162028)))
+                   (y (+ (* r 0.283881)
+                         (* g 0.668433)
+                         (* b 0.047685)))
+                   (z (+ (* r 0.000088)
+                         (* g 0.072310)
+                         (* b 0.986039))))
+               (values x y z))))
+    (destructuring-bind (triangle-r triangle-g triangle-b) (color-gamut->color-triangle (light-type->color-gamut light-type))
+      (destructuring-bind (corrected-r corrected-g corrected-b) (gamma-correction r g b)
         (multiple-value-bind (x y z) (D65-conversion corrected-r corrected-g corrected-b)
           (let* ((sum (+ x y z))
                  (brightness y)
