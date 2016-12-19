@@ -36,6 +36,21 @@ exec ros -Q -- $0 "$@"
 (defparameter +exit-configuration-error+ 78)
 
 
+;;; Color gamuts
+(defparameter +color-gamuts+ '((:gamut-A . (0.704 0.296 ;R
+                                            0.2151 0.7106 ;G
+                                            0.138 0.080 ;B
+                                            ))
+                               (:gamut-B . (0.675 0.322 ;R
+                                            0.409 0.518 ;G
+                                            0.167 0.040 ;B
+                                            ))
+                               (:default . (1.000 0.000 ;R
+                                            0.000 1.000 ;G
+                                            0.000 0.000 ;B
+                                            ))))
+
+
 ;;; Error handling.
 
 (defun errout (exit-code error-message)
@@ -110,6 +125,20 @@ exec ros -Q -- $0 "$@"
 
 ;;; Hue x Commands utils
 
+(defun light-type->color-gamut (light-type)
+  "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
+  ;; FIXME implement anything other than the "default" for the Hue bulbs.
+  :gamut-B
+  )
+
+(defun color-gamut->color-triangle (gamut)
+  (cdr (assoc gamut +color-gamuts+)))
+
+(defun rgb->xy (r g b light-type)
+  (multiple-value-bind (triangle-r triangle-g triangle-b) (color-gamut->color-triangle (light-type->color-gamut light-type))
+      ;; TODO
+    ))
+
 (defun starts-with (string with-what &key (test #'char=))
   (let ((result (search with-what string :test test)))
     (and (numberp result)
@@ -135,7 +164,7 @@ exec ros -Q -- $0 "$@"
           (if (cl-hue::light-on-p light) "ON" "  ")
           (cl-hue::light-number light)
           (cl-hue::light-name light))
-  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds."
+  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds." ;FIXME if mode = xy, output XY instead; HSV goes only if mode=hs (also consider computed values instead)
           (cl-hue::light-colormode light)
           (cl-hue::light-hue light)
           (cl-hue::light-saturation light)
