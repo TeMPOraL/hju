@@ -122,6 +122,10 @@ exec ros -Q -- $0 "$@"
   "Convert color temperature from Kelvins to mireds."
   (floor (/ 1000000 ctk)))
 
+(defun ttime->msec (transition-time)
+  "Converts Hue `transition-time' to milliseconds."
+  (* 100 transition-time))
+
 
 ;;; Math utils
 (defun make-vec-2d (x y)
@@ -320,7 +324,7 @@ Refer to Philips Hue documentation for details."
 
 (defun light-on (light)
   (when *verbose*
-    (format t "~&Turning on ~A over ~A milliseconds..." (light-short-description light) (* 100 *transition-time*)))
+    (format t "~&Turning on ~A over ~A milliseconds..." (light-short-description light) (ttime->msec *transition-time*)))
   (cl-hue:set-light-state-by-number *bridge*
                                     (cl-hue::light-number light)
                                     :on t
@@ -357,7 +361,8 @@ Refer to Philips Hue documentation for details."
 
 (defun light-set-rgb (light r g b)            ;TODO
   (declare (ignorable light r g b))
-  (format t "~&Setting ~A to rgb(~S, ~S, ~S)." (light-short-description light) r g b)
+  (when *verbose*
+    (format t "~&Setting ~A to rgb(~S, ~S, ~S) over ~A milliseconds..." (light-short-description light) r g b (ttime->msec *transition-time*)))
   (errout +exit-whatever+ "not yet implemented"))
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
@@ -379,7 +384,7 @@ Refer to Philips Hue documentation for details."
       (format t "~&Setting brightness of ~A to ~A over ~A milliseconds..."
               (light-short-description light)
               parsed-bri
-              (* 100 *transition-time*)))
+              (ttime->msec *transition-time*)))
     (cl-hue:set-light-state-by-number *bridge*
                                       (cl-hue::light-number light)
                                       :brightness parsed-bri
@@ -393,7 +398,7 @@ Refer to Philips Hue documentation for details."
       (format t "~&Setting color temperature of ~A to ~A mireds over ~A milliseconds..."
               (light-short-description light)
               parsed-ct
-              (* 100 *transition-time*)))
+              (ttime->msec *transition-time*)))
     (cl-hue:set-light-state-by-number *bridge*
                                       (cl-hue::light-number light)
                                       :ct parsed-ct
@@ -408,7 +413,7 @@ Refer to Philips Hue documentation for details."
               (light-short-description light)
               parsed-ctk
               (kelvins->mireds parsed-ctk)
-              (* 100 *transition-time*)))
+              (ttime->msec *transition-time*)))
     (cl-hue:set-light-state-by-number *bridge*
                                       (cl-hue::light-number light)
                                       :ct (kelvins->mireds parsed-ctk)
