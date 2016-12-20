@@ -221,7 +221,11 @@ Order of segment start/end is irrelevant."
 (defun color-gamut->color-triangle (gamut)
   (cdr (assoc gamut +color-gamuts+)))
 
-(defun rgb->xy (r g b light-type)
+(defun rgb->xyb (r g b light-type)
+  "Takes an RGB color and converts it to XY coordinates in CIE color space and a brightness value, bounded
+to the actual color gamut available on light (determined by `LIGHT-TYPE').
+Returns results as (VALUES X Y BRIGHTNESS).
+Refer to Philips Hue documentation for details."
   (labels ((gamma-correct (component)
              (if (> component 0.04045)
                  (expt (/ (+ component 0.055)
@@ -248,7 +252,7 @@ Order of segment start/end is irrelevant."
           (let* ((sum (+ x y z))
                  (brightness y)
                  (candidate-point (make-vec-2d (if (zerop sum) 0.0 (/ x sum))
-                                       (if (zerop sum) 0.0 (/ y sum))))
+                                               (if (zerop sum) 0.0 (/ y sum))))
                  (final-point (closest-point-on-triangle candidate-point triangle-r triangle-g triangle-b)))
             (values (vec-x final-point) (vec-y final-point) brightness)))))))
 
