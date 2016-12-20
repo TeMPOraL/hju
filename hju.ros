@@ -82,7 +82,7 @@ exec ros -Q -- $0 "$@"
 
 (defun print-usage ()
   (format t "~&hju - a simple command line controller for Hue lights
-~&Version: 0.2
+~&Version: 0.3
 ~&
 ~&Usage:
 ~&~8Thju [options...] <command> [args]"))

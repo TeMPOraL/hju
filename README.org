@@ -22,7 +22,7 @@
 #+BEGIN_SRC sh
 $ ./hju --help
 hju - a simple command line controller for Hue lights
-Version: 0.2
+Version: 0.3
 
 Usage:
         hju [options...] <command> [args]
@@ -63,8 +63,8 @@ Commands:
 
 * Configuration
   Hju searches for its configuration file in following places:
-  - %HOME%/.hju
-  - %HOME%/.config/hju/.hju
+  - =$HOME/.hju=
+  - =$HOME/.config/hju/.hju=
 
   If a configuration file is present there, it will be loaded, making it no longer required to pass
   bridge URL and user ID as command line arguments.
