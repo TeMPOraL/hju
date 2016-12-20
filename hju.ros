@@ -104,7 +104,8 @@ exec ros -Q -- $0 "$@"
 ~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
 ~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
 ~&~8Tset LIGHT rgb #RGB~10,8@TSet color of LIGHT to #RRGGBB (hex).
-~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V).
+~&~8Tset LIGHT hue HUE~10,8@TSet hue of LIGHT to HUE [0...65535].
+~&~8Tset LIGHT sat SAT~10,8@TSet saturation of LIGHT to SAT [0...254].
 ~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [1...254].
 ~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
 ~&~8Tset LIGHT ctk CTK~10,8@TSet color temperature of LIGHT to CTK in Kelvins.
@@ -409,9 +410,33 @@ Refer to Philips Hue documentation for details."
   (multiple-value-bind (r g b) (rgbhex->rgb hex-rgb)
     (light-set-rgb light r g b)))
 
-(defun light-set-hsv (light h s v)              ;TODO
-  (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v)
-  (errout +exit-whatever+ "not yet implemented"))
+(defun light-set-hue (light hue)
+  (let ((parsed-hue (parse-integer hue :junk-allowed t)))
+    (unless (number-in-range-p parsed-hue 0 65535)
+      (errout +exit-data-format-error+ "invalid hue value"))
+    (when *verbose*
+      (format t "~&Setting hue of ~A to ~A over ~A milliseconds..."
+              (light-short-description light)
+              parsed-hue
+              (ttime->msec *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :hue parsed-hue
+                                      :transitiontime *transition-time*)))
+
+(defun light-set-sat (light sat)
+  (let ((parsed-sat (parse-integer sat :junk-allowed t)))
+    (unless (number-in-range-p parsed-sat 0 254)
+      (errout +exit-data-format-error+ "invalid saturation value"))
+    (when *verbose*
+      (format t "~&Setting saturation of ~A to ~A over ~A milliseconds..."
+              (light-short-description light)
+              parsed-sat
+              (ttime->msec *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :saturation parsed-sat
+                                      :transitiontime *transition-time*)))
 
 (defun light-set-bri (light bri)
   (let ((parsed-bri (parse-integer bri :junk-allowed t)))
@@ -490,8 +515,10 @@ Refer to Philips Hue documentation for details."
      (if (starts-with (first args) "#")
          (light-set-rgb-hex light (first args))
          (light-set-rgb light (first args) (second args) (third args))))
-    ((string-equal set-what "hsv")
-     (light-set-hsv light (first args) (second args) (third args)))
+    ((string-equal set-what "hue")
+     (light-set-hue light (first args)))
+    ((string-equal set-what "sat")
+     (light-set-sat light (first args)))
     ((string-equal set-what "bri")
      (light-set-bri light (first args)))
     ((string-equal set-what "ct")
