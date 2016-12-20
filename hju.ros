@@ -7,8 +7,7 @@ exec ros -Q -- $0 "$@"
   (ros:ensure-asdf)
   #+quicklisp (ql:quickload '(cl-hue
                               apply-argv
-                              parse-number) :silent t)
-  )
+                              parse-number) :silent t))
 
 (defpackage :ros.script.hju.3690567483
   (:use :cl))
