@@ -56,10 +56,34 @@ exec ros -Q -- $0 "$@"
                                             (0.409 0.518)   ;G
                                             (0.167 0.040)   ;B
                                             ))
+                               (:gamut-C . ((0.692 0.308)   ;R
+                                            (0.170 0.700)   ;G
+                                            (0.153 0.048)   ;B
+                                            ))
                                (:default . ((1.000 0.000)   ;R
                                             (0.000 1.000)   ;G
                                             (0.000 0.000)   ;B
                                             ))))
+
+(defparameter +bulbs->gamuts+ '(("LST001" . :gamut-A)
+                                ("LLC010" . :gamut-A)
+                                ("LLC011" . :gamut-A)
+                                ("LLC012" . :gamut-A)
+                                ("LLC006" . :gamut-A)
+                                ("LLC007" . :gamut-A)
+                                ("LLC013" . :gamut-A)
+                                
+                                ("LCT001" . :gamut-B)
+                                ("LCT002" . :gamut-B)
+                                ("LCT003" . :gamut-B)
+                                ("LCT007" . :gamut-B)
+                                ("LLM001" . :gamut-B)
+
+                                ("LCT010" . :gamut-C)
+                                ("LCT014" . :gamut-C)
+                                ("LCT011" . :gamut-C)
+                                ("LLC020" . :gamut-C)
+                                ("LST002" . :gamut-C)))
 
 
 ;;; Error handling.
@@ -82,7 +106,7 @@ exec ros -Q -- $0 "$@"
 
 (defun print-usage ()
   (format t "~&hju - a simple command line controller for Hue lights
-~&Version: 0.3
+~&Version: 0.4
 ~&
 ~&Usage:
 ~&~8Thju [options...] <command> [args]"))
@@ -98,6 +122,7 @@ exec ros -Q -- $0 "$@"
 ~&~8T-t TRANSITION, --transition=TRANSITION~10,8@TUse specified transition time (in tenths of a second).
 ~&
 ~&~4TTRANSITION is given in seconds, can be fractional. Default value: 0.4.
+~&~4TTerminate options with -- if -h or -v is used last.
 ~&
 ~&Defaults are taken from the config file .hju in your home directory.
 ~&The format of that file is:
@@ -225,10 +250,10 @@ Order of segment start/end is irrelevant."
 
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
-  ;; FIXME implement anything other than the "default" for the Hue bulbs.
-  (declare (ignore light-type))
-  :gamut-B
-  )
+  (if (stringp light-type)
+      (or (cdr (assoc light-type +bulbs->gamuts+ :test #'string-equal))
+          :default)
+      :default))
 
 (defun closest-point-on-triangle (point triangle-r triangle-g triangle-b)
   "Takes a `POINT' and a triangle made of three corners; returns closest point to `POINT' in the triangle."

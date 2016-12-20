@@ -1,6 +1,10 @@
 #+title: HJU - A simple command line Hue lights controller in Common Lisp.
 #+startup: hidestars
 
+Hju lets you control your Hue lights straight from the command line!
+
+Supports all color gamut conversions (for RGB mode) specified by Hue documentation to date.
+
 * Installation
 
   Requirements:
@@ -22,7 +26,7 @@
 #+BEGIN_SRC sh
 $ ./hju --help
 hju - a simple command line controller for Hue lights
-Version: 0.3
+Version: 0.4
 
 Usage:
         hju [options...] <command> [args]
@@ -35,6 +39,7 @@ Options:
         -t TRANSITION, --transition=TRANSITION          Use specified transition time (in tenths of a second).
 
     TRANSITION is given in seconds, can be fractional. Default value: 0.4.
+    Terminate options with -- if -h or -v is used last.
 
 Defaults are taken from the config file .hju in your home directory.
 The format of that file is:
