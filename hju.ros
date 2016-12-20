@@ -156,7 +156,7 @@ of the cross product in 3D space."
     (+ (* dx dx)
        (* dy dy))))
 
-(defun point-closest-to-segment (point segment-start segment-end)
+(defun closest-point-on-segment (point segment-start segment-end)
   "Returns a point closest to `POINT' that is on a segment starting from `SEGMENT-START' and ending at `SEGMENT-END'.
 Order of segment start/end is irrelevant."
   (let* ((start->point (make-vec-2d (- (vec-x point) (vec-x segment-start))
@@ -201,19 +201,19 @@ Order of segment start/end is irrelevant."
                   (<= (+ s u)
                       1.0))))
          (compute-closest-point ()
-           (let* ((closest-to-RG (point-closest-to-segment point triangle-r triangle-g))
-                  (closest-to-BR (point-closest-to-segment point triangle-b triangle-r))
-                  (closest-to-GB (point-closest-to-segment point triangle-g triangle-b))
-                  (distance2-to-RG (distance-2d-squared point closest-to-RG))
-                  (distance2-to-BR (distance-2d-squared point closest-to-BR))
-                  (distance2-to-GB (distance-2d-squared point closest-to-GB))
+           (let* ((closest-on-RG (closest-point-on-segment point triangle-r triangle-g))
+                  (closest-on-BR (closest-point-on-segment point triangle-b triangle-r))
+                  (closest-on-GB (closest-point-on-segment point triangle-g triangle-b))
+                  (distance2-to-RG (distance-2d-squared point closest-on-RG))
+                  (distance2-to-BR (distance-2d-squared point closest-on-BR))
+                  (distance2-to-GB (distance-2d-squared point closest-on-GB))
                   (lowest-distance distance2-to-RG))
              (cond ((< distance2-to-BR lowest-distance)
-                    closest-to-BR)
+                    closest-on-BR)
                    ((< distance2-to-GB lowest-distance)
-                    closest-to-GB)
+                    closest-on-GB)
                    (t
-                    closest-to-RG)))))
+                    closest-on-RG)))))
     (if (point-in-triangle)
         point
         (compute-closest-point))))
