@@ -22,7 +22,7 @@
 #+BEGIN_SRC sh
 $ ./hju --help
 hju - a simple command line controller for Hue lights
-Version: 0.1
+Version: 0.2
 
 Usage:
         hju [options...] <command> [args]
@@ -48,9 +48,11 @@ Commands:
         toggle LIGHT                    Toggle LIGHT.
         reset LIGHT                     Reset LIGHT to the values I (the author) like.
         blink LIGHT                     Blink LIGHT.
-        set LIGHT rgb R G B             Set color of LIGHT to rgb(R, G, B) (each component in [0...255]).
+        set LIGHT rgb R G B             Set color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
         set LIGHT rgb #RRGGBB           Set color of LIGHT to #RRGGBB (hex).
-        set LIGHT hsv H S V             Set color of LIGHT to hsv(H, S, V).
+        set LIGHT rgb #RGB              Set color of LIGHT to #RRGGBB (hex).
+        set LIGHT hue HUE               Set hue of LIGHT to HUE [0...65535].
+        set LIGHT sat SAT               Set saturation of LIGHT to SAT [0...254].
         set LIGHT bri BRI               Set brightness of LIGHT to BRI [1...254].
         set LIGHT ct CT                 Set color temperature of LIGHT to CT in Mired.
         set LIGHT ctk CTK               Set color temperature of LIGHT to CTK in Kelvins.
