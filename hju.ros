@@ -12,11 +12,13 @@ exec ros -Q -- $0 "$@"
 
 (defpackage :ros.script.hju.3690567483
   (:use :cl))
-(in-package :ros.script.hju.3690567483)
+(defpackage :ros.script.hju.3690567483.config
+  (:use :cl)
+  (:nicknames :hju-config)
+  (:export #:*bridge-url*
+           #:*user-id*))
 
-;;; TODO LIST
-;;; - add "ALL" as a light type (or maybe ability to enumerate lights)
-;;; - implement reading bridge URI and user ID from configuration file
+(in-package :ros.script.hju.3690567483)
 
 
 ;;; State.
@@ -36,6 +38,15 @@ exec ros -Q -- $0 "$@"
 (defparameter +exit-configuration-error+ 78)
 
 
+;;; Other constants
+(defparameter +config-file-name+ ".hju")
+(defparameter +config-file-search-locations+ (list (merge-pathnames +config-file-name+ (user-homedir-pathname))
+                                                   (merge-pathnames +config-file-name+ (merge-pathnames ".config/hju/" (user-homedir-pathname)))))
+
+(defparameter hju-config:*bridge-url* nil "Bridge URL settable by config file.")
+(defparameter hju-config:*user-id* nil "User ID settable by config file.")
+
+
 ;;; Color gamuts
 (defparameter +color-gamuts+ '((:gamut-A . ((0.704 0.296)   ;R
                                             (0.2151 0.7106) ;G
@@ -52,7 +63,6 @@ exec ros -Q -- $0 "$@"
 
 
 ;;; Error handling.
-
 (defun errout (exit-code error-message)
   "Sets the error string to be displayed at the end of application to `ERROR-MESSAGE', and sets the exit value of the program to `EXIT-CODE'."
   (setf *errno* exit-code)
@@ -491,19 +501,26 @@ Refer to Philips Hue documentation for details."
                                       :xy (list parsed-x parsed-y)
                                       :transitiontime *transition-time*)))
 
-
-;;; Command selection utils.
-
 
 
 ;;; Entry point-related and command processing.
 
+(defun load-config-if-exists ()
+  (let ((config-file (find-if (lambda (path)
+                                (probe-file path))
+                              +config-file-search-locations+)))
+    (when config-file
+      (let ((*package* (find-package :hju-config)))
+        (load config-file)))))
+
 (defun init-hue-access (switches)
   ;; TODO also load from file
   (let ((bridge (or (getf switches :b)
-                    (getf switches :bridge)))
+                    (getf switches :bridge)
+                    hju-config:*bridge-url*))
         (user (or (getf switches :u)
-                  (getf switches :user))))
+                  (getf switches :user)
+                  hju-config:*user-id*)))
     (unless (and bridge user)
       (errout +exit-configuration-error+ "bridge not set"))
     (setf *bridge* (cl-hue:make-bridge bridge user))
@@ -584,6 +601,7 @@ Refer to Philips Hue documentation for details."
              (setf *transition-time* parsed-time))))
 
        ;; Init Hue connection and run actual command.
+       (load-config-if-exists)
        (init-hue-access switches)
        (run-command command switches)))
    +exit-ok+))

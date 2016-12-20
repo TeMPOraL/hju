@@ -61,12 +61,25 @@ Commands:
     LIGHT can be given as a number or as a prefix of its name.
 #+END_SRC
 
+* Configuration
+  Hju searches for its configuration file in following places:
+  - %HOME%/.hju
+  - %HOME%/.config/hju/.hju
+
+  If a configuration file is present there, it will be loaded, making it no longer required to pass
+  bridge URL and user ID as command line arguments.
+
+  The template for config file is as follows:
+
+  #+BEGIN_SRC lisp
+    (setf *bridge-url* "IP address of your Hue bridge"
+          *user-id* "your user ID")
+  #+END_SRC
 
 * To be done
 
 ** Current focus
    - status
-   - reading bridge URL and user ID from configuration
 
 ** Future work
    - changing the interface to allow affecting multiple lights with a single command
