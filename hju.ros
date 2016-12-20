@@ -179,9 +179,37 @@ Order of segment start/end is irrelevant."
 
 
 ;;; Hue x Commands utils
+(defun number-in-range-p (number min max)
+  (and (numberp number)
+       (>= number min)
+       (<= number max)))
+
+(defun change-range (number from-start from-end to-start to-end)
+  "Change `NUMBER' from range [`FROM-START' ... `FROM-END'] to [`TO-START' ... `TO-END']."
+  (+ (* (/ (- number from-start)
+           (- from-end from-start))
+        (- to-end to-start))
+     to-start))
+
+(defun rgbhex->rgb (hex)
+  "Convert hexadecimal color notation of #RGB or #RRGGBB to 0-1 ranged rgb(r g b)."
+  (let ((string-to-process (cond ((= (length hex) 4)
+                                  (coerce (list (elt hex 1) (elt hex 1) (elt hex 2) (elt hex 2) (elt hex 3) (elt hex 3)) 'string))
+                                 ((= (length hex) 7)
+                                  (subseq hex 1))
+                                 (t
+                                  (errout +exit-data-format-error+ "malformated RGB hex value")))))
+    (values-list (mapcar (lambda (num)
+                           (change-range (parse-number:parse-number num :radix 16)
+                                         0 255
+                                         0.0 1.0))
+                         (list (subseq string-to-process 0 2)
+                               (subseq string-to-process 2 4)
+                               (subseq string-to-process 4 6))))))
+
 (defun denormalize-brightness (brightness)
   "Convert `BRIGHTNESS' from [0.0 ... 1.0] range to [1 ... 254]."
-  (round (1+ (* brightness 253))))
+  (round (change-range brightness 0.0 1.0 1 254)))
 
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
@@ -363,9 +391,9 @@ Refer to Philips Hue documentation for details."
                                     :alert "select"))
 
 (defun light-set-rgb (light r g b)
-  (let ((parsed-r (parse-number:parse-number r))
-        (parsed-g (parse-number:parse-number g))
-        (parsed-b (parse-number:parse-number b)))
+  (let ((parsed-r (if (numberp r) r (parse-number:parse-number r)))
+        (parsed-g (if (numberp g) g (parse-number:parse-number g)))
+        (parsed-b (if (numberp b) b (parse-number:parse-number b))))
     (when *verbose*
       (format t "~&Setting ~A to rgb(~S, ~S, ~S) over ~A milliseconds..." (light-short-description light) parsed-r parsed-g parsed-b (ttime->msec *transition-time*)))
     (multiple-value-bind (x y brightness) (rgb->xyb parsed-r parsed-g parsed-b :FIXME)
@@ -376,10 +404,9 @@ Refer to Philips Hue documentation for details."
                                          :xy (list x y)
                                          :transitiontime *transition-time*))))
 
-(defun light-set-rgb-hex (light hex-rgb)      ;TODO
-  (declare (ignorable light hex-rgb))
-  (format t "~&Setting ~A to ~S." (light-short-description light) hex-rgb)
-  (errout +exit-whatever+ "not yet implemented"))
+(defun light-set-rgb-hex (light hex-rgb)
+  (multiple-value-bind (r g b) (rgbhex->rgb hex-rgb)
+    (light-set-rgb light r g b)))
 
 (defun light-set-hsv (light h s v)              ;TODO
   (format t "~&Setting ~A to hsv(~S, ~S, ~S)." (light-short-description light) h s v)
@@ -387,9 +414,7 @@ Refer to Philips Hue documentation for details."
 
 (defun light-set-bri (light bri)
   (let ((parsed-bri (parse-integer bri :junk-allowed t)))
-    (unless (and (numberp parsed-bri)
-                 (> parsed-bri 0)
-                 (< parsed-bri 255))
+    (unless (number-in-range-p parsed-bri 1 254)
       (errout +exit-data-format-error+ "invalid brightness value"))
     (when *verbose*
       (format t "~&Setting brightness of ~A to ~A over ~A milliseconds..."
