@@ -179,6 +179,7 @@ Order of segment start/end is irrelevant."
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
   ;; FIXME implement anything other than the "default" for the Hue bulbs.
+  (declare (ignore light-type))
   :gamut-B
   )
 
@@ -262,6 +263,8 @@ Refer to Philips Hue documentation for details."
          (= 0 result))))
 
 (defun get-light-by-param-id (param-id)
+  (unless param-id
+    (errout +exit-usage-error+ "light ID not specified"))
   (let* ((numeric-id (parse-integer param-id :junk-allowed t))
          (light (if numeric-id
                     (find param-id *all-lights* :test #'string-equal :key #'cl-hue::light-number)
@@ -449,7 +452,9 @@ Refer to Philips Hue documentation for details."
     ((string-equal set-what "ctk")
      (light-set-ctk light (first args)))
     ((string-equal set-what "xy")
-     (light-set-xy light (first args) (second args)))))
+     (light-set-xy light (first args) (second args)))
+    (t
+     (errout +exit-usage-error+ "don't know what to set the light to"))))
 
 (defun run-command (command switches)
   (declare (ignore switches))
@@ -473,7 +478,9 @@ Refer to Philips Hue documentation for details."
       ((string-equal verb "set")
        (run-set-command (get-light-by-param-id (first args))
                         (second args)
-                        (cddr args))))))
+                        (cddr args)))
+      (t
+       (errout +exit-usage-error+ "no command given")))))
 
 (defun execute (args)
   (trap-errors
