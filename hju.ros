@@ -201,10 +201,19 @@ Order of segment start/end is irrelevant."
                   (<= (+ s u)
                       1.0))))
          (compute-closest-point ()
-           ;; TODO
-           ))
-    
-    ;; TODO
+           (let* ((closest-to-RG (point-closest-to-segment point triangle-r triangle-g))
+                  (closest-to-BR (point-closest-to-segment point triangle-b triangle-r))
+                  (closest-to-GB (point-closest-to-segment point triangle-g triangle-b))
+                  (distance2-to-RG (distance-2d-squared point closest-to-RG))
+                  (distance2-to-BR (distance-2d-squared point closest-to-BR))
+                  (distance2-to-GB (distance-2d-squared point closest-to-GB))
+                  (lowest-distance distance2-to-RG))
+             (cond ((< distance2-to-BR lowest-distance)
+                    closest-to-BR)
+                   ((< distance2-to-GB lowest-distance)
+                    closest-to-GB)
+                   (t
+                    closest-to-RG)))))
     (if (point-in-triangle)
         point
         (compute-closest-point))))
