@@ -103,6 +103,7 @@ exec ros -Q -- $0 "$@"
 ~&~8Tblink LIGHT~15,8@TBlink LIGHT.
 ~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
 ~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
+~&~8Tset LIGHT rgb #RGB~10,8@TSet color of LIGHT to #RRGGBB (hex).
 ~&~8Tset LIGHT hsv H S V~10,8@TSet color of LIGHT to hsv(H, S, V).
 ~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [1...254].
 ~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
