@@ -64,9 +64,6 @@ Commands:
 
 ** Current focus
    - status
-   - set LIGHT rgb
-   - set LIGHT hsv
-   - set LIGHT xy
    - reading bridge URL and user ID from configuration
 
 ** Future work
