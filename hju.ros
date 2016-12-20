@@ -179,6 +179,9 @@ Order of segment start/end is irrelevant."
 
 
 ;;; Hue x Commands utils
+(defun denormalize-brightness (brightness)
+  "Convert `BRIGHTNESS' from [0.0 ... 1.0] range to [1 ... 254]."
+  (round (1+ (* brightness 253))))
 
 (defun light-type->color-gamut (light-type)
   "Converts `light-type' property of a light to the appropriate color gamut it uses, per Hue official documentation."
@@ -359,11 +362,19 @@ Refer to Philips Hue documentation for details."
                                     (cl-hue::light-number light)
                                     :alert "select"))
 
-(defun light-set-rgb (light r g b)            ;TODO
-  (declare (ignorable light r g b))
-  (when *verbose*
-    (format t "~&Setting ~A to rgb(~S, ~S, ~S) over ~A milliseconds..." (light-short-description light) r g b (ttime->msec *transition-time*)))
-  (errout +exit-whatever+ "not yet implemented"))
+(defun light-set-rgb (light r g b)
+  (let ((parsed-r (parse-number:parse-number r))
+        (parsed-g (parse-number:parse-number g))
+        (parsed-b (parse-number:parse-number b)))
+    (when *verbose*
+      (format t "~&Setting ~A to rgb(~S, ~S, ~S) over ~A milliseconds..." (light-short-description light) parsed-r parsed-g parsed-b (ttime->msec *transition-time*)))
+    (multiple-value-bind (x y brightness) (rgb->xyb parsed-r parsed-g parsed-b :FIXME)
+      (when *verbose*
+        (format t "~&Computed XY: (~A, ~A), brightness: ~A." x y (denormalize-brightness brightness)))
+      (cl-hue::set-light-state-by-number *bridge* (cl-hue::light-number light)
+                                         :brightness (denormalize-brightness brightness)
+                                         :xy (list x y)
+                                         :transitiontime *transition-time*))))
 
 (defun light-set-rgb-hex (light hex-rgb)      ;TODO
   (declare (ignorable light hex-rgb))
