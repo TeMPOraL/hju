@@ -456,10 +456,15 @@ Refer to Philips Hue documentation for details."
                                       :ct (kelvins->mireds parsed-ctk)
                                       :transitiontime *transition-time*)))
 
-(defun light-set-xy (light x y)         ;TODO
-  (declare (ignorable light x y))
-  (format t "~&Setting light ~A XY to (~S, ~S)." (light-short-description light) x y)
-  (errout +exit-whatever+ "not yet implemented"))
+(defun light-set-xy (light x y)
+  (let ((parsed-x (parse-number:parse-number x))
+        (parsed-y (parse-number:parse-number y)))
+    (when *verbose*
+      (format t "~&Setting light ~A XY to (~S, ~S) over ~A milliseconds..." (light-short-description light) parsed-x parsed-y (ttime->msec *transition-time*)))
+    (cl-hue:set-light-state-by-number *bridge*
+                                      (cl-hue::light-number light)
+                                      :xy (list parsed-x parsed-y)
+                                      :transitiontime *transition-time*)))
 
 
 ;;; Command selection utils.
