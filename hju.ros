@@ -97,7 +97,7 @@ exec ros -Q -- $0 "$@"
 
 (defmacro trap-errors (&rest forms)
   `(catch 'trap-errors
-     (handler-bind ((error #'trap-errors-handler))
+     (handler-bind ((serious-condition #'trap-errors-handler))
        ,@forms)))
 
 
