@@ -351,16 +351,23 @@ Refer to Philips Hue documentation for details."
   (format nil "~A (~A)" (cl-hue::light-name light) (cl-hue::light-number light)))
 
 (defun describe-light (light)
-  (format t "~&[~A] ~A: ~A"
-          (if (cl-hue::light-on-p light) "ON" "  ")
-          (cl-hue::light-number light)
-          (cl-hue::light-name light))
-  (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds." ;FIXME if mode = xy, output XY (and brightness)instead; HSV goes only if mode=hs (also consider computed values instead)
-          (cl-hue::light-colormode light)
-          (cl-hue::light-hue light)
-          (cl-hue::light-saturation light)
-          (cl-hue::light-brightness light)
-          (cl-hue::light-ct light)))
+  (flet ((light-status-shortcode ()
+           (cond ((not (cl-hue::light-reachable-p light))
+                  "??")
+                 ((cl-hue::light-on-p light)
+                  "ON")
+                 (t
+                  "  "))))
+    (format t "~&[~A] ~A: ~A"
+            (light-status-shortcode)
+            (cl-hue::light-number light)
+            (cl-hue::light-name light))
+    (format t "~40TMode: ~A, HSV: (~A, ~A, ~A), Temp: ~A mireds." ;FIXME if mode = xy, output XY (and brightness)instead; HSV goes only if mode=hs (also consider computed values instead)
+            (cl-hue::light-colormode light)
+            (cl-hue::light-hue light)
+            (cl-hue::light-saturation light)
+            (cl-hue::light-brightness light)
+            (cl-hue::light-ct light))))
 
 (defun describe-light-verbose (light)
   (format t "~&Light #~A: ~A" (cl-hue::light-number light) (cl-hue::light-name light))
