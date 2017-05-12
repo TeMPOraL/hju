@@ -45,7 +45,7 @@ Options:
 
 Defaults are taken from the config file .hju in your home directory.
 The format of that file is:
-    (:bridge "bridge URL" :user "USER ID")
+    (setf *bridge-url* "bridge URL" *user-id* "USER ID")
 
 Commands:
         status                          Display status of Hue bridge and all lights.

@@ -127,7 +127,7 @@ exec ros -Q -- $0 "$@"
 ~&
 ~&Defaults are taken from the config file .hju in your home directory.
 ~&The format of that file is:
-~&~4T(:bridge \"bridge URL\" :user \"USER ID\")
+~&~4T(setf *bridge-url* \"bridge URL\" *user-id* \"USER ID\")
 ~&
 ~&Commands:
 ~&~8Tstatus~20,8@TDisplay status of Hue bridge and all lights.
