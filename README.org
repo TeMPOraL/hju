@@ -3,7 +3,7 @@
 
 Hju lets you control your Hue lights straight from the command line!
 
-Supports all color gamut conversions (for RGB mode) specified by Hue documentation to date.
+Supports all color gamut conversions (for RGB mode) specified by Hue documentation to date (as of 2016-12).
 
 * Installation
 
@@ -26,10 +26,12 @@ Supports all color gamut conversions (for RGB mode) specified by Hue documentati
 #+BEGIN_SRC sh
 $ ./hju --help
 hju - a simple command line controller for Hue lights
-Version: 0.4
+Version: 0.5
 
 Usage:
         hju [options...] <command> [args]
+
+Use "hju -h" or "hju --help" for complete list of options.
 
 Options:
         -h, --help                                      Display this text.
@@ -48,22 +50,28 @@ The format of that file is:
 Commands:
         status                          Display status of Hue bridge and all lights.
         list                            Just list available lights and their status.
-        on LIGHT                        Turn on LIGHT.
-        off LIGHT                       Turn off LIGHT.
-        toggle LIGHT                    Toggle LIGHT.
-        reset LIGHT                     Reset LIGHT to the values I (the author) like.
-        blink LIGHT                     Blink LIGHT.
-        set LIGHT rgb R G B             Set color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
-        set LIGHT rgb #RRGGBB           Set color of LIGHT to #RRGGBB (hex).
-        set LIGHT rgb #RGB              Set color of LIGHT to #RRGGBB (hex).
-        set LIGHT hue HUE               Set hue of LIGHT to HUE [0...65535].
-        set LIGHT sat SAT               Set saturation of LIGHT to SAT [0...254].
-        set LIGHT bri BRI               Set brightness of LIGHT to BRI [1...254].
-        set LIGHT ct CT                 Set color temperature of LIGHT to CT in Mired.
-        set LIGHT ctk CTK               Set color temperature of LIGHT to CTK in Kelvins.
-        set LIGHT xy X Y                Set color of LIGHT to coordinates (X, Y) in CIE color space.
+        on LIGHTS                       Turn on LIGHTS.
+        off LIGHTS                      Turn off LIGHTS.
+        toggle LIGHTS                   Toggle LIGHTS.
+        reset LIGHTS                    Reset LIGHTS to the values I (the author) like.
+        blink LIGHTS                    Blink LIGHTS.
+        set LIGHTS rgb R G B            Set color of LIGHTS to rgb(R, G, B) (each component in [0.0 ... 1.0]).
+        set LIGHTS rgb #RRGGBB          Set color of LIGHTS to #RRGGBB (hex).
+        set LIGHTS rgb #RGB             Set color of LIGHTS to #RRGGBB (hex).
+        set LIGHTS hue HUE              Set hue of LIGHTS to HUE [0...65535].
+        set LIGHTS sat SAT              Set saturation of LIGHTS to SAT [0...254].
+        set LIGHTS bri BRI              Set brightness of LIGHTS to BRI [1...254].
+        set LIGHTS ct CT                Set color temperature of LIGHTS to CT in Mired.
+        set LIGHTS ctk CTK              Set color temperature of LIGHTS to CTK in Kelvins.
+        set LIGHTS xy X Y               Set color of LIGHTS to coordinates (X, Y) in CIE color space.
 
-    LIGHT can be given as a number or as a prefix of its name.
+    LIGHTS can be given as a comma-separated list of numbers or prefixes of their names.
+    LIGHTS can also be given as "all", which will make the command affect all lights.
+
+Examples:
+        hju on living,bathroom
+        hju off bat
+        hju set 1,3 rgb #11FF11
 #+END_SRC
 
 * Configuration
@@ -82,11 +90,5 @@ Commands:
   #+END_SRC
 
 * To be done
+  See [[https://github.com/TeMPOraL/hju/issues][issues]] for a list of planned features and known problems.
 
-** Current focus
-   - status
-
-** Future work
-   - changing the interface to allow affecting multiple lights with a single command
-   - adding ability to customize color names
-   - adding ability to pair the app with bridge

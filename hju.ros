@@ -105,10 +105,12 @@ exec ros -Q -- $0 "$@"
 
 (defun print-usage ()
   (format t "~&hju - a simple command line controller for Hue lights
-~&Version: 0.4
+~&Version: 0.5
 ~&
 ~&Usage:
-~&~8Thju [options...] <command> [args]"))
+~&~8Thju [options...] <command> [args]
+~&
+~&Use \"hju -h\" or \"hju --help\" for complete list of options."))
 
 (defun print-help ()
   (print-usage)
@@ -130,22 +132,28 @@ exec ros -Q -- $0 "$@"
 ~&Commands:
 ~&~8Tstatus~20,8@TDisplay status of Hue bridge and all lights.
 ~&~8Tlist~25,8@TJust list available lights and their status.
-~&~8Ton LIGHT~20,8@TTurn on LIGHT.
-~&~8Toff LIGHT~20,8@TTurn off LIGHT.
-~&~8Ttoggle LIGHT~15,8@TToggle LIGHT.
-~&~8Treset LIGHT~15,8@TReset LIGHT to the values I (the author) like.
-~&~8Tblink LIGHT~15,8@TBlink LIGHT.
-~&~8Tset LIGHT rgb R G B~10,8@TSet color of LIGHT to rgb(R, G, B) (each component in [0.0 ... 1.0]).
-~&~8Tset LIGHT rgb #RRGGBB~10,8@TSet color of LIGHT to #RRGGBB (hex).
-~&~8Tset LIGHT rgb #RGB~10,8@TSet color of LIGHT to #RRGGBB (hex).
-~&~8Tset LIGHT hue HUE~10,8@TSet hue of LIGHT to HUE [0...65535].
-~&~8Tset LIGHT sat SAT~10,8@TSet saturation of LIGHT to SAT [0...254].
-~&~8Tset LIGHT bri BRI~10,8@TSet brightness of LIGHT to BRI [1...254].
-~&~8Tset LIGHT ct CT~10,8@TSet color temperature of LIGHT to CT in Mired.
-~&~8Tset LIGHT ctk CTK~10,8@TSet color temperature of LIGHT to CTK in Kelvins.
-~&~8Tset LIGHT xy X Y~10,8@TSet color of LIGHT to coordinates (X, Y) in CIE color space.
+~&~8Ton LIGHTS~20,8@TTurn on LIGHTS.
+~&~8Toff LIGHTS~20,8@TTurn off LIGHTS.
+~&~8Ttoggle LIGHTS~15,8@TToggle LIGHTS.
+~&~8Treset LIGHTS~15,8@TReset LIGHTS to the values I (the author) like.
+~&~8Tblink LIGHTS~15,8@TBlink LIGHTS.
+~&~8Tset LIGHTS rgb R G B~10,8@TSet color of LIGHTS to rgb(R, G, B) (each component in [0.0 ... 1.0]).
+~&~8Tset LIGHTS rgb #RRGGBB~10,8@TSet color of LIGHTS to #RRGGBB (hex).
+~&~8Tset LIGHTS rgb #RGB~10,8@TSet color of LIGHTS to #RRGGBB (hex).
+~&~8Tset LIGHTS hue HUE~10,8@TSet hue of LIGHTS to HUE [0...65535].
+~&~8Tset LIGHTS sat SAT~10,8@TSet saturation of LIGHTS to SAT [0...254].
+~&~8Tset LIGHTS bri BRI~10,8@TSet brightness of LIGHTS to BRI [1...254].
+~&~8Tset LIGHTS ct CT~10,8@TSet color temperature of LIGHTS to CT in Mired.
+~&~8Tset LIGHTS ctk CTK~10,8@TSet color temperature of LIGHTS to CTK in Kelvins.
+~&~8Tset LIGHTS xy X Y~10,8@TSet color of LIGHTS to coordinates (X, Y) in CIE color space.
 ~&
-~&~4TLIGHT can be given as a number or as a prefix of its name.
+~&~4TLIGHTS can be given as a comma-separated list of numbers or prefixes of their names.
+~&~4TLIGHTS can also be given as \"all\", which will make the command affect all lights.
+~&
+~&Examples:
+~&~8Thju on living,bathroom
+~&~8Thju off bat
+~&~8Thju set 1,3 rgb #11FF11
 "))
 
 
@@ -346,6 +354,13 @@ Refer to Philips Hue documentation for details."
     (unless light
       (errout +exit-usage-error+ (format nil "light ~A not found" param-id)))
     light))
+
+(defun get-lights-by-param (param)
+  (unless param
+    (errout +exit-usage-error+ "light ID not specified"))
+  (if (string-equal param "all")
+      *all-lights*
+      (mapcar #'get-light-by-param-id (split-sequence:split-sequence #\, param))))
 
 (defun light-short-description (light)
   (format nil "~A (~A)" (cl-hue::light-name light) (cl-hue::light-number light)))
@@ -557,24 +572,29 @@ Refer to Philips Hue documentation for details."
     (setf *bridge* (cl-hue:make-bridge bridge user))
     (fetch-all-lights)))
 
-(defun run-set-command (light set-what args)
+(defun execute-command (command lights &rest args)
+  "Execute `COMMAND' once for each light in `LIGHTS', with `ARGS'."
+  (loop for light in lights
+       do (apply command light args)))
+
+(defun run-set-command (lights set-what args)
   (cond
     ((string-equal set-what "rgb")
      (if (starts-with (first args) "#")
-         (light-set-rgb-hex light (first args))
-         (light-set-rgb light (first args) (second args) (third args))))
+         (execute-command #'light-set-rgb-hex lights (first args))
+         (execute-command #'light-set-rgb lights (first args) (second args) (third args))))
     ((string-equal set-what "hue")
-     (light-set-hue light (first args)))
+     (execute-command #'light-set-hue lights (first args)))
     ((string-equal set-what "sat")
-     (light-set-sat light (first args)))
+     (execute-command #'light-set-sat lights (first args)))
     ((string-equal set-what "bri")
-     (light-set-bri light (first args)))
+     (execute-command #'light-set-bri lights (first args)))
     ((string-equal set-what "ct")
-     (light-set-ct light (first args)))
+     (execute-command #'light-set-ct lights (first args)))
     ((string-equal set-what "ctk")
-     (light-set-ctk light (first args)))
+     (execute-command #'light-set-ctk lights (first args)))
     ((string-equal set-what "xy")
-     (light-set-xy light (first args) (second args)))
+     (execute-command #'light-set-xy lights (first args) (second args)))
     (t
      (errout +exit-usage-error+ "don't know what to set the light to"))))
 
@@ -588,17 +608,17 @@ Refer to Philips Hue documentation for details."
       ((string-equal verb "list")
        (list-lights))
       ((string-equal verb "on")
-       (light-on (get-light-by-param-id (first args))))
+       (execute-command #'light-on (get-lights-by-param (first args))))
       ((string-equal verb "off")
-       (light-off (get-light-by-param-id (first args))))
+       (execute-command #'light-off (get-lights-by-param (first args))))
       ((string-equal verb "toggle")
-       (light-toggle (get-light-by-param-id (first args))))
+       (execute-command #'light-toggle (get-lights-by-param (first args))))
       ((string-equal verb "reset")
-       (light-reset (get-light-by-param-id (first args))))
+       (execute-command #'light-reset (get-lights-by-param (first args))))
       ((string-equal verb "blink")
-       (light-blink (get-light-by-param-id (first args))))
+       (execute-command #'light-blink (get-lights-by-param (first args))))
       ((string-equal verb "set")
-       (run-set-command (get-light-by-param-id (first args))
+       (run-set-command (get-lights-by-param (first args))
                         (second args)
                         (cddr args)))
       (t
