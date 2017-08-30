@@ -93,6 +93,7 @@ exec ros -Q -- $0 "$@"
 
 (defun trap-errors-handler (error)
   (format *error-output* "Error: ~A." error)
+  (fresh-line *error-output*)
   (throw 'trap-errors (if (zerop *errno*) +exit-whatever+ *errno*)))
 
 (defmacro trap-errors (&rest forms)
@@ -110,12 +111,11 @@ exec ros -Q -- $0 "$@"
 ~&Usage:
 ~&~8Thju [options...] <command> [args]
 ~&
-~&Use \"hju -h\" or \"hju --help\" for complete list of options."))
+~&Use \"hju -h\" or \"hju --help\" for complete list of options.~&"))
 
 (defun print-help ()
   (print-usage)
-  (format t "~%
-~&Options:
+  (format t "~&Options:
 ~&~8T-h, --help~35,8@TDisplay this text.
 ~&~8T-v, --verbose~30,8@TMake output verbose.
 ~&~8T-b BRIDGE, --bridge=BRIDGE~15,8@TUse different bridge URL than the default.
@@ -654,7 +654,8 @@ Refer to Philips Hue documentation for details."
        ;; Init Hue connection and run actual command.
        (load-config-if-exists)
        (init-hue-access switches)
-       (run-command command switches)))
+       (run-command command switches)
+       (fresh-line)))
    +exit-ok+))
 
 (defun main (&rest argv)
